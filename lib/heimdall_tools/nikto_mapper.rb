@@ -26,9 +26,8 @@ end
 
 module HeimdallTools
   class NiktoMapper
-    def initialize(nikto_json, _name = nil, verbose = false)
+    def initialize(nikto_json, _name = nil)
       @nikto_json = nikto_json
-      @verbose = verbose
 
       begin
         @nikto_nist_mapping = parse_mapper

@@ -6,7 +6,6 @@ module HeimdallTools
     long_desc Help.text(:fortify_mapper)
     option :fvdl, required: true, aliases: '-f'
     option :output, required: true, aliases: '-o'
-    option :verbose, type: :boolean, aliases: '-V'
     def fortify_mapper
       hdf = HeimdallTools::FortifyMapper.new(File.read(options[:fvdl])).to_hdf
       File.write(options[:output], hdf)
@@ -17,7 +16,6 @@ module HeimdallTools
     option :json, required: true, aliases: '-j'
     option :name, required: true, aliases: '-n'
     option :output, required: true, aliases: '-o'
-    option :verbose, type: :boolean, aliases: '-V'
     def zap_mapper
       hdf = HeimdallTools::ZapMapper.new(File.read(options[:json]), options[:name]).to_hdf
       File.write(options[:output], hdf)
@@ -29,7 +27,6 @@ module HeimdallTools
     option :api_url, required: true, aliases: '-u'
     option :auth, type: :string, required: false
     option :output, required: true, aliases: '-o'
-    option :verbose, type: :boolean, aliases: '-V'
     def sonarqube_mapper
       hdf = HeimdallTools::SonarQubeMapper.new(options[:name], options[:api_url], options[:auth]).to_hdf
       File.write(options[:output], hdf)
@@ -39,7 +36,6 @@ module HeimdallTools
     long_desc Help.text(:burpsuite_mapper)
     option :xml, required: true, aliases: '-x'
     option :output, required: true, aliases: '-o'
-    option :verbose, type: :boolean, aliases: '-V'
     def burpsuite_mapper
       hdf = HeimdallTools::BurpSuiteMapper.new(File.read(options[:xml])).to_hdf
       File.write(options[:output], hdf)
@@ -49,7 +45,6 @@ module HeimdallTools
     long_desc Help.text(:nessus_mapper)
     option :xml, required: true, aliases: '-x'
     option :output_prefix, required: true, aliases: '-o'
-    option :verbose, type: :boolean, aliases: '-V'
     def nessus_mapper
       hdfs = HeimdallTools::NessusMapper.new(File.read(options[:xml])).to_hdf
 
@@ -64,7 +59,6 @@ module HeimdallTools
     long_desc Help.text(:snyk_mapper)
     option :json, required: true, aliases: '-j'
     option :output_prefix, required: true, aliases: '-o'
-    option :verbose, type: :boolean, aliases: '-V'
     def snyk_mapper
       hdfs = HeimdallTools::SnykMapper.new(File.read(options[:json]), options[:name]).to_hdf
       puts "\r\HDF Generated:\n"
@@ -78,7 +72,6 @@ module HeimdallTools
     long_desc Help.text(:nikto_mapper)
     option :json, required: true, aliases: '-j'
     option :output, required: true, aliases: '-o'
-    option :verbose, type: :boolean, aliases: '-V'
     def nikto_mapper
       hdf = HeimdallTools::NiktoMapper.new(File.read(options[:json])).to_hdf
       File.write(options[:output], hdf)
@@ -90,7 +83,6 @@ module HeimdallTools
     long_desc Help.text(:jfrog_xray_mapper)
     option :json, required: true, aliases: '-j'
     option :output, required: true, aliases: '-o'
-    option :verbose, type: :boolean, aliases: '-V'
     def jfrog_xray_mapper
       hdf = HeimdallTools::JfrogXrayMapper.new(File.read(options[:json])).to_hdf
       File.write(options[:output], hdf)
@@ -102,7 +94,6 @@ module HeimdallTools
     long_desc Help.text(:dbprotect_mapper)
     option :xml, required: true, aliases: '-x'
     option :output, required: true, aliases: '-o'
-    option :verbose, type: :boolean, aliases: '-V'
     def dbprotect_mapper
       hdf = HeimdallTools::DBProtectMapper.new(File.read(options[:xml])).to_hdf
       File.write(options[:output], hdf)
@@ -114,7 +105,6 @@ module HeimdallTools
     long_desc Help.text(:aws_config_mapper)
     # option :custom_mapping, required: false, aliases: '-m'
     option :output, required: true, aliases: '-o'
-    option :verbose, type: :boolean, aliases: '-V'
     def aws_config_mapper
       hdf = HeimdallTools::AwsConfigMapper.new(options[:custom_mapping]).to_hdf
       File.write(options[:output], hdf)
@@ -126,7 +116,6 @@ module HeimdallTools
     long_desc Help.text(:netsparker_mapper)
     option :xml, required: true, aliases: '-x'
     option :output, required: true, aliases: '-o'
-    option :verbose, type: :boolean, aliases: '-V'
     def netsparker_mapper
       hdf = HeimdallTools::NetsparkerMapper.new(File.read(options[:xml])).to_hdf
       File.write(options[:output], hdf)

@@ -21,8 +21,7 @@ DEFAULT_NIST_TAG = %w{SA-11 RA-5}.freeze
 
 module HeimdallTools
   class NetsparkerMapper
-    def initialize(xml, _name = nil, verbose = false)
-      @verbose = verbose
+    def initialize(xml, _name = nil)
 
       begin
         @cwe_nist_mapping = parse_mapper(CWE_NIST_MAPPING_FILE)

@@ -39,9 +39,8 @@ end
 
 module HeimdallTools
   class NessusMapper
-    def initialize(nessus_xml, verbose = false)
+    def initialize(nessus_xml)
       @nessus_xml = nessus_xml
-      @verbose = verbose
       read_cci_xml
       begin
         @cwe_nist_mapping = parse_mapper

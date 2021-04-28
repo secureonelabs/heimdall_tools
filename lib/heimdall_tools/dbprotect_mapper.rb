@@ -12,8 +12,7 @@ IMPACT_MAPPING = {
 
 module HeimdallTools
   class DBProtectMapper
-    def initialize(xml, _name = nil, verbose = false)
-      @verbose = verbose
+    def initialize(xml, _name = nil)
 
       begin
         dataset = xml_to_hash(xml)

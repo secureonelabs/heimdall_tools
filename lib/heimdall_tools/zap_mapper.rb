@@ -12,9 +12,8 @@ DEFAULT_NIST_TAG = %w{SA-11 RA-5}.freeze
 
 module HeimdallTools
   class ZapMapper
-    def initialize(zap_json, name, verbose = false)
+    def initialize(zap_json, name)
       @zap_json = zap_json
-      @verbose = verbose
 
       begin
         data = JSON.parse(zap_json, symbolize_names: true)
