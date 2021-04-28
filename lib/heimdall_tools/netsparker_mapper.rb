@@ -22,17 +22,14 @@ DEFAULT_NIST_TAG = %w{SA-11 RA-5}.freeze
 module HeimdallTools
   class NetsparkerMapper
     def initialize(xml, _name = nil)
+      @cwe_nist_mapping = parse_mapper(CWE_NIST_MAPPING_FILE)
+      @owasp_nist_mapping = parse_mapper(OWASP_NIST_MAPPING_FILE)
+      data = xml_to_hash(xml)
 
-      begin
-        @cwe_nist_mapping = parse_mapper(CWE_NIST_MAPPING_FILE)
-        @owasp_nist_mapping = parse_mapper(OWASP_NIST_MAPPING_FILE)
-        data = xml_to_hash(xml)
-
-        @vulnerabilities = data['netsparker-enterprise']['vulnerabilities']['vulnerability']
-        @scan_info = data['netsparker-enterprise']['target']
-      rescue StandardError => e
-        raise "Invalid Netsparker XML file provided Exception: #{e}"
-      end
+      @vulnerabilities = data['netsparker-enterprise']['vulnerabilities']['vulnerability']
+      @scan_info = data['netsparker-enterprise']['target']
+    rescue StandardError => e
+      raise "Invalid Netsparker XML file provided Exception: #{e}"
     end
 
     def to_hdf

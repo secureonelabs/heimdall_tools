@@ -13,13 +13,10 @@ IMPACT_MAPPING = {
 module HeimdallTools
   class DBProtectMapper
     def initialize(xml, _name = nil)
-
-      begin
-        dataset = xml_to_hash(xml)
-        @entries = compile_findings(dataset['dataset'])
-      rescue StandardError => e
-        raise "Invalid DBProtect XML file provided Exception: #{e};\nNote that XML must be of kind `Check Results Details`."
-      end
+      dataset = xml_to_hash(xml)
+      @entries = compile_findings(dataset['dataset'])
+    rescue StandardError => e
+      raise "Invalid DBProtect XML file provided Exception: #{e};\nNote that XML must be of kind `Check Results Details`."
     end
 
     def to_hdf
