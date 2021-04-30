@@ -20,9 +20,8 @@ DEFAULT_NIST_TAG = %w{SA-11 RA-5 Rev_4}.freeze
 
 module HeimdallTools
   class BurpSuiteMapper
-    def initialize(burps_xml, _name = nil, verbose = false)
+    def initialize(burps_xml, _name = nil)
       @burps_xml = burps_xml
-      @verbose = verbose
 
       begin
         @cwe_nist_mapping = parse_mapper

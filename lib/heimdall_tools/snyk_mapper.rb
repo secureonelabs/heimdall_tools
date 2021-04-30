@@ -29,9 +29,8 @@ end
 
 module HeimdallTools
   class SnykMapper
-    def initialize(synk_json, _name = nil, verbose = false)
+    def initialize(synk_json, _name = nil)
       @synk_json = synk_json
-      @verbose = verbose
 
       begin
         @cwe_nist_mapping = parse_mapper

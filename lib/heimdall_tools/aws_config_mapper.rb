@@ -18,8 +18,7 @@ INSUFFICIENT_DATA_MSG = 'Not enough data has been collectd to determine complian
 #
 module HeimdallTools
   class AwsConfigMapper
-    def initialize(custom_mapping, endpoint = nil, verbose = false)
-      @verbose = verbose
+    def initialize(custom_mapping, endpoint = nil)
       @default_mapping = get_rule_mapping(AWS_CONFIG_MAPPING_FILE)
       @custom_mapping = custom_mapping.nil? ? {} : get_rule_mapping(custom_mapping)
       if endpoint.nil?

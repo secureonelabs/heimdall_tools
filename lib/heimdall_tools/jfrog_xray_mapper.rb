@@ -27,9 +27,8 @@ end
 
 module HeimdallTools
   class JfrogXrayMapper
-    def initialize(xray_json, _name = nil, verbose = false)
+    def initialize(xray_json, _name = nil)
       @xray_json = xray_json
-      @verbose = verbose
 
       begin
         @cwe_nist_mapping = parse_mapper

@@ -7,9 +7,8 @@ DEFAULT_NIST_TAG = %w{SA-11 RA-5}.freeze
 
 module HeimdallTools
   class FortifyMapper
-    def initialize(fvdl, verbose = false)
+    def initialize(fvdl)
       @fvdl = fvdl
-      @verbose = verbose
 
       begin
         data = xml_to_hash(fvdl)
