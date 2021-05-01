@@ -71,7 +71,8 @@ module HeimdallTools
       info = {}
 
       info['policyName'] = policy['policyName']
-      info['version'] = policy['Preferences']['ServerPreferences']['preference'].select { |x| x['name'].eql? 'sc_version' }.first['value']
+      scanner_version = policy['Preferences']['ServerPreferences']['preference'].select { |x| x['name'].eql? 'sc_version' }
+      info['version'] = scanner_version.empty? ? NA_STRING : scanner_version.first['value']
       info
     rescue StandardError => e
       raise "Invalid Nessus XML file provided Exception: #{e}"
