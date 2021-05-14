@@ -9,7 +9,7 @@ HeimdallTools supplies several methods to convert output from various tools to "
 - **fortify_mapper** - commercial static code analysis tool
 - **zap_mapper** - OWASP ZAP - open-source dynamic code analysis tool
 - **burpsuite_mapper** - commercial dynamic analysis tool
-- **nessus_mapper** - commercial vulnerability scanner
+- **nessus_mapper** - commercial security scanner (supports compliance and vulnerability scans from Tenable.sc and Tenable.io)
 - **snyk_mapper** - commercial package vulnerability scanner
 - **nikto_mapper** - open-source web server scanner 
 - **jfrog_xray_mapper** - package vulnerability scanner
@@ -152,7 +152,8 @@ example: heimdall_tools burpsuite_mapper -x burpsuite_results.xml -o scan_result
 
 ## nessus_mapper
 
-nessus_mapper translates a Nessus-exported XML results file into HDF format json to be viewable in Heimdall
+nessus_mapper translates a Nessus-exported XML results file into HDF format json to be viewable in Heimdall.
+Supports compliance and vulnerability scans from Tenable.sc and Tenable.io.
 
 Note: A separate HDF JSON file is generated for each host reported in the Nessus Report.
 
