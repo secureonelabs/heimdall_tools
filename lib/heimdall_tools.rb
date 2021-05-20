@@ -17,4 +17,5 @@ module HeimdallTools
   autoload :AwsConfigMapper, 'heimdall_tools/aws_config_mapper'
   autoload :NetsparkerMapper, 'heimdall_tools/netsparker_mapper'
   autoload :SarifMapper, 'heimdall_tools/sarif_mapper'
+  autoload :ScoutSuiteMapper, 'heimdall_tools/scoutsuite_mapper'
 end

@@ -57,10 +57,10 @@ module HeimdallTools
 
       results = HeimdallDataFormat.new(
         profile_name: 'AWS Config',
-         title: 'AWS Config',
-         summary: 'AWS Config',
-         controls: controls,
-         statistics: { aws_config_sdk_version: Aws::ConfigService::GEM_VERSION },
+        title: 'AWS Config',
+        summary: 'AWS Config',
+        controls: controls,
+        statistics: { aws_config_sdk_version: Aws::ConfigService::GEM_VERSION },
       )
       results.to_hdf
     end

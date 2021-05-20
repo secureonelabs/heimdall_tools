@@ -135,6 +135,17 @@ module HeimdallTools
       puts options[:output].to_s
     end
 
+    desc 'scoutsuite_mapper', 'scoutsuite_mapper translates Scout Suite results from Javascript to HDF-formatted JSON so as to be viewable on Heimdall'
+    long_desc Help.text(:scoutsuite_mapper)
+    option :javascript, required: true, banner: 'SCOUTSUITE-RESULTS-JS', aliases: ['-i', '--input', '-j']
+    option :output, required: true, banner: 'HDF-SCAN-RESULTS-JSON', aliases: '-o'
+    def scoutsuite_mapper
+      hdf = HeimdallTools::ScoutSuiteMapper.new(File.read(options[:javascript])).to_hdf
+      File.write(options[:output], hdf)
+      puts "\rHDF Generated:\n"
+      puts options[:output].to_s
+    end
+
     desc 'version', 'prints version'
     def version
       puts VERSION

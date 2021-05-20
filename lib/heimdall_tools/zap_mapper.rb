@@ -8,8 +8,6 @@ RESOURCE_DIR = Pathname.new(__FILE__).join('../../data')
 CWE_NIST_MAPPING_FILE = File.join(RESOURCE_DIR, 'cwe-nist-mapping.csv')
 DEFAULT_NIST_TAG = %w{SA-11 RA-5}.freeze
 
-# rubocop:disable Metrics/AbcSize
-
 module HeimdallTools
   class ZapMapper
     def initialize(zap_json, name)

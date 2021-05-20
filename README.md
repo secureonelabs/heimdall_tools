@@ -17,6 +17,7 @@ HeimdallTools supplies several methods to convert output from various tools to "
 - **aws_config_mapper** - assess, audit, and evaluate AWS resources
 - **netsparker_mapper** - web application security scanner
 - **sarif_mapper** - static analysis results interchange format
+- **scoutsuite_mapper** - multi-cloud security auditing tool
 
 ## Want to recommend a mapper for another tool? Please use these steps:
   1. Create an [issue](https://github.com/mitre/heimdall_tools/issues/new), and email saf@groups.mitre.org citing the issue link so we can help
@@ -200,6 +201,22 @@ FLAGS:
     -V --verbose                     : verbose run [optional].
 
 example: heimdall_tools nikto_mapper -j nikto_results.json -o nikto_results.json
+```
+
+## scoutsuite_mapper
+
+scoutsuite_mapper translates Scout Suite results from Javascript to HDF-formatted JSON so as to be viewable on Heimdall
+
+Note: Currently this mapper only supports AWS.
+
+```
+USAGE: heimdall_tools scoutsuite_mapper -i <scoutsuite-results-js> -o <hdf-scan-results-json>
+
+FLAGS:
+    -i --input -j --javascript <scoutsuite-results-js> : path to Scout Suite results Javascript file.
+    -o --output <hdf-scan-results-json>                : path to output scan-results json.
+
+example: heimdall_tools scoutsuite_mapper -i scoutsuite_results.js -o scoutsuite_hdf.json
 ```
 
 ## jfrog_xray_mapper
