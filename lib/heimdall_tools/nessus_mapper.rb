@@ -221,8 +221,12 @@ module HeimdallTools
           end
           if item['compliance-reference']
             @item['tags']['nist']     = cci_nist_tag(parse_refs(item['compliance-reference'], 'CCI'))
+            @item['tags']['cci']      = parse_refs(item['compliance-reference'], 'CCI')
+            @item['tags']['rid']      = parse_refs(item['compliance-reference'], 'Rule-ID').join(',')
+            @item['tags']['stig_id']  = parse_refs(item['compliance-reference'], 'STIG-ID').join(',')
           else
             @item['tags']['nist']     = plugin_nist_tag(item['pluginFamily'], item['pluginID'])
+            @item['tags']['rid']      = item['pluginID'].to_s
           end
           if item['compliance-solution']
             @item['descriptions']       << desc_tags(item['compliance-solution'], 'check')
