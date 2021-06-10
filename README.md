@@ -300,6 +300,8 @@ FLAGS:
 
 example: heimdall_tools sarif_mapper -j sarif_results.json -o sarif_results_hdf.json
 ```
+Converting from HDF to SARIF JSON can be accomplished using the [SARIF SDK](https://github.com/microsoft/sarif-sdk)
+
 
 ## version  
 
