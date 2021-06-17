@@ -41,6 +41,15 @@ module HeimdallTools
       File.write(options[:output], hdf)
     end
 
+    desc 'xccdf_results_mapper', 'xccdf_results_mapper translates SCAP client XCCDF-Results XML report to HDF format Json be viewed on Heimdall'
+    long_desc Help.text(:xccdf_results_mapper)
+    option :xml, required: true, aliases: '-x'
+    option :output, required: true, aliases: '-o'
+    def xccdf_results_mapper
+      hdf = HeimdallTools::XCCDFResultsMapper.new(File.read(options[:xml])).to_hdf
+      File.write(options[:output], hdf)
+    end
+
     desc 'nessus_mapper', 'nessus_mapper translates nessus xml report to HDF format Json be viewed on Heimdall'
     long_desc Help.text(:nessus_mapper)
     option :xml, required: true, aliases: '-x'

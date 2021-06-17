@@ -25,8 +25,6 @@ DEFAULT_NIST_REV = 'Rev_4'.freeze
 
 NA_PLUGIN_OUTPUT = 'This Nessus Plugin does not provide output message.'.freeze
 
-# rubocop:disable Metrics/AbcSize
-
 # Loading spinner sign
 $spinner = Enumerator.new do |e|
   loop do

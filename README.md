@@ -5,32 +5,32 @@
 
 HeimdallTools supplies several methods to convert output from various tools to "Heimdall Data Format"(HDF) format to be viewable in Heimdall. The current converters are:
 
-- **sonarqube_mapper** - open-source static code analysis tool
-- **fortify_mapper** - commercial static code analysis tool
-- **zap_mapper** - OWASP ZAP - open-source dynamic code analysis tool
-- **burpsuite_mapper** - commercial dynamic analysis tool
-- **nessus_mapper** - commercial security scanner (supports compliance and vulnerability scans from Tenable.sc and Tenable.io)
-- **snyk_mapper** - commercial package vulnerability scanner
-- **nikto_mapper** - open-source web server scanner 
-- **jfrog_xray_mapper** - package vulnerability scanner
-- **dbprotect_mapper** - database vulnerability scanner
-- **aws_config_mapper** - assess, audit, and evaluate AWS resources
-- **netsparker_mapper** - web application security scanner
-- **sarif_mapper** - static analysis results interchange format
-- **scoutsuite_mapper** - multi-cloud security auditing tool
+1.  [**aws_config_mapper**](#aws_config_mapper) - assess, audit, and evaluate AWS resources
+1.  [**burpsuite_mapper**](#burpsuite_mapper) - commercial dynamic analysis tool
+1.  [**dbprotect_mapper**](#dbprotect_mapper) - database vulnerability scanner
+1.  [**fortify_mapper**](#fortify_mapper) - commercial static code analysis tool
+1.  [**jfrog_xray_mapper**](#jfrog_xray_mapper) - package vulnerability scanner
+1.  [**nessus_mapper**](#nessus_mapper) - commercial security scanner (supports compliance and vulnerability scans from Tenable.sc and Tenable.io)
+1.  [**netsparker_mapper**](#netsparker_mapper) - web application security scanner
+1.  [**nikto_mapper**](#nikto_mapper) - open-source web server scanner
+1.  [**sarif_mapper**](#sarif_mapper) - static analysis results interchange format
+1. [**scoutsuite_mapper**](#scoutsuite_mapper) - multi-cloud security auditing tool
+1. [**snyk_mapper**](#snyk_mapper) - commercial package vulnerability scanner
+1. [**sonarqube_mapper**](#sonarqube_mapper) - open-source static code analysis tool
+1. [**xccdf_results_mapper**](#xccdf_results_mapper) - extensible configuration checklist description results format
+1. [*scc_mapper](#xccdf_results_mapper) - scap compliance checker format
+1. [**zap_mapper**](#zap_mapper) - OWASP ZAP - open-source dynamic code analysis tool
 
 ## Want to recommend a mapper for another tool? Please use these steps:
-  1. Create an [issue](https://github.com/mitre/heimdall_tools/issues/new), and email saf@groups.mitre.org citing the issue link so we can help
-  2. Provide a sample output, preferably the most detailed the tool can provide, and also preferably in a machine-readable format, such as xml, json, or csv - whichever is natively available. If it is sensitive we'll work that in #3. (If it's an API only, we'll also just talk about it in #3)
-  3. Let's arrange a time to take a close look at the data it provides to get an idea of all it has to offer. We'll suggest an initial mapping of the HDF core elements. (see https://saf.mitre.org/#/normalize)
-  4. Note: if the tool doesn't provide a NIST SP 800-53 reference, we've worked on mappings to other references such as CWE or OWASP Top 10:  
-    https://github.com/mitre/heimdall_tools/tree/master/lib/data  
-    https://github.com/mitre/heimdall_tools/blob/master/lib/data/cwe-nist-mapping.csv  
-    https://github.com/mitre/heimdall_tools/blob/master/lib/data/owasp-nist-mapping.csv  
-  5. If the tool doesn't provide something for #4, or another core element such as impact, we'll help you identify a custom mapping approach.
-  6. We'll help you decide how to preserve any other information (non-core elements) the tool provides to ensure that all of the original tool's intent comes through for the user when the data is viewed in Heimdall.
-  7. Finally, We'll provide final peer review and support merging your pull request.
-We appreciate your contributions, but we're here to help!
+
+1.  Create an [issue](https://github.com/mitre/heimdall_tools/issues/new), and email saf@groups.mitre.org citing the issue link so we can help
+2.  Provide a sample output, preferably the most detailed the tool can provide, and also preferably in a machine-readable format, such as xml, json, or csv - whichever is natively available. If it is sensitive we'll work that in #3. (If it's an API only, we'll also just talk about it in #3)
+3.  Let's arrange a time to take a close look at the data it provides to get an idea of all it has to offer. We'll suggest an initial mapping of the HDF core elements.
+4.  Note: if the tool doesn't provide a NIST SP 800-53 reference, we've worked on mappings to other references such as CWE or OWASP Top 10.
+5.  If the tool doesn't provide something for #4, or another core element such as impact, we'll help you identify a custom mapping approach.
+6.  We'll help you decide how to preserve any other information (non-core elements) the tool provides to ensure that all of the original tool's intent comes through for the user when the data is viewed in Heimdall.
+7.  Finally, We'll provide final peer review and support merging your pull request.
+    We appreciate your contributions, but we're here to help!
 
 ## How to Install Heimdall Tools:
 
@@ -66,7 +66,7 @@ Verify the installed version number:
 
 ### Installation on Ubuntu-based systems
 
-<https://github.com/rvm/ubuntu_rvm>
+
 
 # Installation of Heimdall Tools:
 
@@ -79,77 +79,82 @@ For detailed help on any command, run `heimdall_tools help [COMMAND]`. Help can 
 
 For Docker usage, replace the `heimdall_tools` command with the correct Docker command below for your operating system:
 
-- **On Linux and Mac:** `docker run -it -v$(pwd):/share mitre/heimdall_tools`
-- **On Windows CMD:** `docker run -it -v%cd%:/share mitre/heimdall_tools`
+-   **On Linux and Mac:** `docker run -it -v$(pwd):/share mitre/heimdall_tools`
+-   **On Windows CMD:** `docker run -it -v%cd%:/share mitre/heimdall_tools`
 
 Note that all of the above Docker commands will mount your current directory on the Docker container. Ensure that you have navigated to the directory you intend to convert files in before executing the command.
 
-## sonarqube_mapper
+## aws_config_mapper
 
-sonarqube_mapper pulls SonarQube results, for the specified project, from the API and outputs in HDF format Json to be viewed on Heimdall
+aws_config_mapper pulls Ruby AWS SDK data to translate AWS Config Rule results into HDF format json to be viewable in Heimdall
 
-```
-USAGE: heimdall_tools sonarqube_mapper [OPTIONS] -n <project-name> -u <api-url> -o <scan-results.json>
+### AWS Config Rule Mapping:
 
-FLAGS:
-    -n --name <project-key>         : Project Key of the project in SonarQube
-    -u --api_url <api-url>           : url of the SonarQube Server API. Typically ends with /api.
-    --auth <credentials>              : username:password or token [optional].
-    -o --output <scan-results>       : path to output scan-results json.
-    -V --verbose                     : verbose run [optional].
+  The mapping of AWS Config Rules to 800-53 Controls was sourced from [this link](https://docs.aws.amazon.com/config/latest/developerguide/operational-best-practices-for-nist-800-53_rev_4.html).
 
-example:
+### Authentication with AWS:
 
-heimdall_tools sonarqube_mapper -n sonar_project_key -u http://sonar:9000/api -o scan_results.json
+  [Developer Guide for configuring Ruby AWS SDK for authentication](https://docs.aws.amazon.com/sdk-for-ruby/v3/developer-guide/setup-config.html)
 
-heimdall_tools sonarqube_mapper -n sonar_project_key -u http://sonar:9000/api --auth admin:admin -o scan_results.json
-```
+    USAGE: heimdall_tools aws_config_mapper [OPTIONS] -o
 
-## fortify_mapper
+    FLAGS:
+        -o --output        : path to output scan-results json.
+        -V --verbose                     : verbose run [optional].
 
-fortify_mapper translates an Fortify results FVDL file into HDF format json to be viewable in Heimdall
-
-```
-USAGE: heimdall_tools fortify_mapper [OPTIONS] -f <fortify-fvdl> -o <scan-results.json>
-
-FLAGS:
-	-f --fvdl <fortify-fvdl>         : path to Fortify Scan FVDL file.
-	-o --output <scan-results>       : path to output scan-results json.
-	-V --verbose                     : verbose run [optional].
-
-example: heimdall_tools fortify_mapper -f audit.fvdl -o scan_results.json
-```
-
-## zap_mapper
-
-zap_mapper translates OWASP ZAP results Json to HDF format Json be viewed on Heimdall
-
-```
-USAGE: heimdall_tools zap_mapper [OPTIONS] -j <zap-json> -n <site-name> -o <scan-results.json>
-
-FLAGS:
-    -j --json <zap-json>             : path to OWASP ZAP results JSON file.
-    -n --name <site-name>            : URL of the site being evaluated.
-    -o --output <scan-results>       : path to output scan-results json.
-    -V --verbose                     : verbose run [optional].
-
-example: heimdall_tools zap_mapper -j zap_results.json -n site_name -o scan_results.json
-```
+    example: heimdall_tools aws_config_mapper -o aws_config_results_hdf.json
 
 ## burpsuite_mapper
 
 burpsuite_mapper translates an BurpSuite Pro exported XML results file into HDF format json to be viewable in Heimdall
 
-```
-USAGE: heimdall_tools burpsuite_mapper [OPTIONS] -x <burpsuite-xml> -o <scan-results.json>
+    USAGE: heimdall_tools burpsuite_mapper [OPTIONS] -x  -o
 
-FLAGS:
-    -x <burpsuite_xml>               : path to BurpSuitePro exported XML results file.
-    -o --output <scan-results>       : path to output scan-results json.
-    -V --verbose                     : verbose run [optional].
+    FLAGS:
+        -x                : path to BurpSuitePro exported XML results file.
+        -o --output        : path to output scan-results json.
+        -V --verbose                     : verbose run [optional].
 
-example: heimdall_tools burpsuite_mapper -x burpsuite_results.xml -o scan_results.json
-```
+    example: heimdall_tools burpsuite_mapper -x burpsuite_results.xml -o scan_results.json
+
+## dbprotect_mapper
+
+dbprotect_mapper translates DBProtect report in `Check Results Details` format XML to HDF format JSON be viewed on Heimdall.
+
+    USAGE: heimdall_tools dbprotect_mapper [OPTIONS] -x  -o
+
+    FLAGS:
+        -x            : path to DBProtect report XML file.
+        -o --output        : path to output scan-results json.
+        -V --verbose                     : verbose run [optional].
+
+    example: heimdall_tools dbprotect_mapper -x check_results_details_report.xml -o db_protect_hdf.json
+
+## fortify_mapper
+
+fortify_mapper translates an Fortify results FVDL file into HDF format json to be viewable in Heimdall
+
+    USAGE: heimdall_tools fortify_mapper [OPTIONS] -f  -o
+
+    FLAGS:
+    	-f --fvdl          : path to Fortify Scan FVDL file.
+    	-o --output        : path to output scan-results json.
+    	-V --verbose                     : verbose run [optional].
+
+    example: heimdall_tools fortify_mapper -f audit.fvdl -o scan_results.json
+
+## jfrog_xray_mapper
+
+jfrog_xray_mapper translates an JFrog Xray results JSON file into HDF format JSON to be viewable in Heimdall
+
+    USAGE: heimdall_tools jfrog_xray_mapper [OPTIONS] -j  -o
+
+    FLAGS:
+        -j            : path to xray results JSON file.
+        -o --output        : path to output scan-results json.
+        -V --verbose                     : verbose run [optional].
+
+    example: heimdall_tools jfrog_xray_mapper -j xray_results.json -o xray_results_hdf.json
 
 ## nessus_mapper
 
@@ -158,50 +163,57 @@ Supports compliance and vulnerability scans from Tenable.sc and Tenable.io.
 
 Note: A separate HDF JSON file is generated for each host reported in the Nessus Report.
 
-```
-USAGE: heimdall_tools nessus_mapper [OPTIONS] -x <nessus-results-xml> -o <hdf-file-prefix>
+    USAGE: heimdall_tools nessus_mapper [OPTIONS] -x  -o
 
-FLAGS:
-    -x <nessus-results-xml>          : path to Nessus-exported XML results file.
-    -o --output_prefix <prefix>      : path to output scan-results json.
-    -V --verbose                     : verbose run [optional].
+    FLAGS:
+        -x           : path to Nessus-exported XML results file.
+        -o --output_prefix       : path to output scan-results json.
+        -V --verbose                     : verbose run [optional].
 
-example: heimdall_tools nessus_mapper -x nessus-results.xml -o test-env
-```
+    example: heimdall_tools nessus_mapper -x nessus-results.xml -o test-env
 
-## snyk_mapper
+## netsparker_mapper
 
-snyk_mapper translates an Snyk results JSON file into HDF format json to be viewable in Heimdall
-  
-Note: A separate HDF JSON is generated for each project reported in the Snyk Report.
+netsparker_mapper translates an Netsparker XML results file into HDF format JSON to be viewable in Heimdall.
 
-```
-USAGE: heimdall_tools snyk_mapper [OPTIONS] -x <snyk-results-json> -o <hdf-file-prefix>
+The current iteration only works with Netsparker Enterprise Vulnerabilities Scan.
 
-FLAGS:
-    -j <snyk_results_jsonl>          : path to Snyk results JSON file.
-    -o --output_prefix <prefix>      : path to output scan-results json.
-    -V --verbose                     : verbose run [optional].
+    USAGE: heimdall_tools netsparker_mapper [OPTIONS] -x  -o
 
-example: heimdall_tools snyk_mapper -j snyk_results.json -o output-file-prefix
-```
+    FLAGS:
+        -x       : path to netsparker results XML file.
+        -o --output        : path to output scan-results json.
+        -V --verbose                     : verbose run [optional].
+
+    example: heimdall_tools netsparker_mapper -x netsparker_results.xml -o netsparker_hdf.json
 
 ## nikto_mapper
 
 nikto_mapper translates an Nikto results JSON file into HDF format JSON to be viewable in Heimdall
-  
+
 Note: Current this mapper only support single target Nikto Scans.
 
-```
-USAGE: heimdall_tools nikto_mapper [OPTIONS] -x <nikto-results-json> -o <hdf-scan-results.json>
+    USAGE: heimdall_tools nikto_mapper [OPTIONS] -x  -o
 
-FLAGS:
-    -j <nikto_results_json>          : path to Nikto results JSON file.
-    -o --output_prefix <prefix>      : path to output scan-results json.
-    -V --verbose                     : verbose run [optional].
+    FLAGS:
+        -j           : path to Nikto results JSON file.
+        -o --output_prefix       : path to output scan-results json.
+        -V --verbose                     : verbose run [optional].
 
-example: heimdall_tools nikto_mapper -j nikto_results.json -o nikto_results.json
-```
+    example: heimdall_tools nikto_mapper -j nikto_results.json -o nikto_results.json
+
+## sarif_mapper
+
+sarif_mapper translates a SARIF JSON file into HDF format JSON to be viewable in Heimdall
+
+    USAGE: heimdall_tools sarif_mapper [OPTIONS] -j  -o
+
+    FLAGS:
+        -j           : path to SARIF results JSON file.
+        -o --output_prefix       : path to output scan-results json.
+        -V --verbose                     : verbose run [optional].
+
+    example: heimdall_tools sarif_mapper -j sarif_results.json -o sarif_results_hdf.json
 
 ## scoutsuite_mapper
 
@@ -209,107 +221,81 @@ scoutsuite_mapper translates Scout Suite results from Javascript to HDF-formatte
 
 Note: Currently this mapper only supports AWS.
 
-```
-USAGE: heimdall_tools scoutsuite_mapper -i <scoutsuite-results-js> -o <hdf-scan-results-json>
+    USAGE: heimdall_tools scoutsuite_mapper -i  -o
 
-FLAGS:
-    -i --input -j --javascript <scoutsuite-results-js> : path to Scout Suite results Javascript file.
-    -o --output <hdf-scan-results-json>                : path to output scan-results json.
+    FLAGS:
+        -i --input -j --javascript  : path to Scout Suite results Javascript file.
+        -o --output                 : path to output scan-results json.
 
-example: heimdall_tools scoutsuite_mapper -i scoutsuite_results.js -o scoutsuite_hdf.json
-```
+    example: heimdall_tools scoutsuite_mapper -i scoutsuite_results.js -o scoutsuite_hdf.json
 
-## jfrog_xray_mapper
+## snyk_mapper
 
-jfrog_xray_mapper translates an JFrog Xray results JSON file into HDF format JSON to be viewable in Heimdall
-  
-```
-USAGE: heimdall_tools jfrog_xray_mapper [OPTIONS] -j <xray-results-json> -o <hdf-scan-results.json>
+snyk_mapper translates an Snyk results JSON file into HDF format json to be viewable in Heimdall
 
-FLAGS:
-    -j <xray_results_json>           : path to xray results JSON file.
-    -o --output <scan-results>       : path to output scan-results json.
-    -V --verbose                     : verbose run [optional].
+Note: A separate HDF JSON is generated for each project reported in the Snyk Report.
 
-example: heimdall_tools jfrog_xray_mapper -j xray_results.json -o xray_results_hdf.json
-```
+    USAGE: heimdall_tools snyk_mapper [OPTIONS] -x  -o
 
-## dbprotect_mapper
+    FLAGS:
+        -j           : path to Snyk results JSON file.
+        -o --output_prefix       : path to output scan-results json.
+        -V --verbose                     : verbose run [optional].
 
-dbprotect_mapper translates DBProtect report in `Check Results Details` format XML to HDF format JSON be viewed on Heimdall.
-  
-```
-USAGE: heimdall_tools dbprotect_mapper [OPTIONS] -x <check_results_details_report_xml> -o <db_protect_hdf.json>
+    example: heimdall_tools snyk_mapper -j snyk_results.json -o output-file-prefix
 
-FLAGS:
-    -x <check_results_details_report_xml>           : path to DBProtect report XML file.
-    -o --output <scan-results>       : path to output scan-results json.
-    -V --verbose                     : verbose run [optional].
+## sonarqube_mapper
 
-example: heimdall_tools dbprotect_mapper -x check_results_details_report.xml -o db_protect_hdf.json
-```
+sonarqube_mapper pulls SonarQube results, for the specified project, from the API and outputs in HDF format Json to be viewed on Heimdall
 
-## aws_config_mapper
+    USAGE: heimdall_tools sonarqube_mapper [OPTIONS] -n  -u  -o
 
-aws_config_mapper pulls Ruby AWS SDK data to translate AWS Config Rule results into HDF format json to be viewable in Heimdall
+    FLAGS:
+        -n --name          : Project Key of the project in SonarQube
+        -u --api_url            : url of the SonarQube Server API. Typically ends with /api.
+        --auth               : username:password or token [optional].
+        -o --output        : path to output scan-results json.
+        -V --verbose                     : verbose run [optional].
 
-### AWS Config Rule Mapping:
-  The mapping of AWS Config Rules to 800-53 Controls was sourced from [this link](https://docs.aws.amazon.com/config/latest/developerguide/operational-best-practices-for-nist-800-53_rev_4.html).
-  
-### Authentication with AWS:
-  [Developer Guide for configuring Ruby AWS SDK for authentication](https://docs.aws.amazon.com/sdk-for-ruby/v3/developer-guide/setup-config.html)
-  
-```
-USAGE: heimdall_tools aws_config_mapper [OPTIONS] -o <hdf-scan-results.json>
+    example:
 
-FLAGS:
-    -o --output <scan-results>       : path to output scan-results json.
-    -V --verbose                     : verbose run [optional].
+    heimdall_tools sonarqube_mapper -n sonar_project_key -u http://sonar:9000/api -o scan_results.json
 
-example: heimdall_tools aws_config_mapper -o aws_config_results_hdf.json
-```
+    heimdall_tools sonarqube_mapper -n sonar_project_key -u http://sonar:9000/api --auth admin:admin -o scan_results.json
 
-## netsparker_mapper
+## xccdf_results_mapper
 
-netsparker_mapper translates an Netsparker XML results file into HDF format JSON to be viewable in Heimdall.
+Note: SCC outputs scan results in XCCDF-Results format.
 
-  The current iteration only works with Netsparker Enterprise Vulnerabilities Scan.
+xccdf_results_mapper translates an XCCDF_Results XML scan into HDF format json to be viewable in Heimdall.
 
-```
-USAGE: heimdall_tools netsparker_mapper [OPTIONS] -x <netsparker_results_xml> -o <hdf-scan-results.json>
+    USAGE: heimdall_tools xccdf_results_mapper [OPTIONS] -x  -o
 
-FLAGS:
-    -x <netsparker_results_xml>      : path to netsparker results XML file.
-    -o --output <scan-results>       : path to output scan-results json.
-    -V --verbose                     : verbose run [optional].
+    FLAGS:
+        -x            : path to XCCDF-Results XML file.
+        -o --output        : path to output scan-results json.
 
-example: heimdall_tools netsparker_mapper -x netsparker_results.xml -o netsparker_hdf.json
-```
+    example: heimdall_tools xccdf_results_mapper -x xccdf_results.xml -o scan_results.json
 
-## sarif_mapper
+## zap_mapper
 
-sarif_mapper translates a SARIF JSON file into HDF format JSON to be viewable in Heimdall
+zap_mapper translates OWASP ZAP results Json to HDF format Json be viewed on Heimdall
 
-```
-USAGE: heimdall_tools sarif_mapper [OPTIONS] -j <sarif-results-json> -o <hdf-scan-results.json>
+    USAGE: heimdall_tools zap_mapper [OPTIONS] -j  -n  -o
 
-FLAGS:
-    -j <sarif_results_json>          : path to SARIF results JSON file.
-    -o --output_prefix <prefix>      : path to output scan-results json.
-    -V --verbose                     : verbose run [optional].
+    FLAGS:
+        -j --json              : path to OWASP ZAP results JSON file.
+        -n --name             : URL of the site being evaluated.
+        -o --output        : path to output scan-results json.
+        -V --verbose                     : verbose run [optional].
 
-example: heimdall_tools sarif_mapper -j sarif_results.json -o sarif_results_hdf.json
-```
-Converting from HDF to SARIF JSON can be accomplished using the [SARIF SDK](https://github.com/microsoft/sarif-sdk)
+    example: heimdall_tools zap_mapper -j zap_results.json -n site_name -o scan_results.json
 
-
-## version  
+## version
 
 Prints out the gem version
 
-```
-USAGE: heimdall_tools version
-```
+    USAGE: heimdall_tools version
 
 # Development
 
@@ -317,26 +303,26 @@ USAGE: heimdall_tools version
 
 ### A complete PR should include 7 core elements:
 
-- A signed PR ( aka `git commit -a -s` )
-- Code for the new functionality
-- Updates to the CLI
-- New unit tests for the functionality
-- Updates to the docs and examples in `README.md` and `./docs/*`
-- (if needed) Example / Template files ( `metadata.yml`,`example.yml`, etc )
-  - Scripts / Scaffolding code for the Example / Template files ( `generate_map` is an example )
-- Example Output of the new functionality if it produces an artifact
+-   A signed PR ( aka `git commit -a -s` )
+-   Code for the new functionality
+-   Updates to the CLI
+-   New unit tests for the functionality
+-   Updates to the docs and examples in `README.md` and `./docs/*`
+-   (if needed) Example / Template files ( `metadata.yml`,`example.yml`, etc )
+    -   Scripts / Scaffolding code for the Example / Template files ( `generate_map` is an example )
+-   Example Output of the new functionality if it produces an artifact
 
 ### Overview of our PR process
 
-1. open an issue on the main inspec_tools website noting the issues your PR will address
-2. fork the repo
-3. checkout your repo
-4. cd to the repo
-5. git co -b `<your_branch>`
-6. bundle install
-7. `hack as you will`
-8. test via rake
-9. ensure unit tests still function and add unit tests for your new feature
+1.  open an issue on the main inspec_tools website noting the issues your PR will address
+2.  fork the repo
+3.  checkout your repo
+4.  cd to the repo
+5.  git co -b ``
+6.  bundle install
+7.  `hack as you will`
+8.  test via rake
+9.  ensure unit tests still function and add unit tests for your new feature
 10. add new docs to the `README.md` and to `./docs/examples`
 11. update the CLI as needed and add in `usage` example
 12. (if needed) create and document any example or templates
@@ -344,18 +330,18 @@ USAGE: heimdall_tools version
 14. (opt) gem build inspec_tools.gemspec
 15. (opt) gem install inspec_tools
 16. (opt) test via the installed gem
-17. git commit -a -s `<your_branch>`
+17. git commit -a -s ``
 18. Open a PRs aginst the MITRE inspec_tools repo
 
 # Publishing a Release
 
 If you are a maintainer, it is very easy to cut a release of this gem:
 
-1. Click on "Releases" and there should be a draft pending.
-2. Make sure the Tag version and Release title match!
-3. Add any additional notes can be added in the Description box.
-4. Click "Publish release".
-5. Release notes will be posted and a new gem will be pushed to Rubygems & Github Packages with the version you specified on step 2.
+1.  Click on "Releases" and there should be a draft pending.
+2.  Make sure the Tag version and Release title match!
+3.  Add any additional notes can be added in the Description box.
+4.  Click "Publish release".
+5.  Release notes will be posted and a new gem will be pushed to Rubygems & Github Packages with the version you specified on step 2.
 
 # Testing
 
@@ -369,8 +355,8 @@ To release a new version, update the version number in `version.rb` according to
 
 ### Authors
 
-- Author:: Rony Xavier [rx294](https://github.com/rx294)
-- Author:: Dan Mirsky [mirskiy](https://github.com/mirskiy)
+-   Author:: Rony Xavier [rx294](https://github.com/rx294)
+-   Author:: Dan Mirsky [mirskiy](https://github.com/mirskiy)
 
 ### NOTICE
 
