@@ -19,4 +19,5 @@ module HeimdallTools
   autoload :SarifMapper, 'heimdall_tools/sarif_mapper'
   autoload :ScoutSuiteMapper, 'heimdall_tools/scoutsuite_mapper'
   autoload :XCCDFResultsMapper, 'heimdall_tools/xccdf_results_mapper'
+  autoload :ASFFMapper, 'heimdall_tools/asff_mapper'
 end

@@ -155,6 +155,17 @@ module HeimdallTools
       puts options[:output].to_s
     end
 
+    desc 'asff_mapper', 'asff_mapper translates AWS Security Finding Format results from JSON to HDF-formatted JSON so as to be viewable on Heimdall'
+    long_desc Help.text(:asff_mapper)
+    option :json, required: true, banner: 'ASFF-FINDING-JSON', aliases: ['-i', '--input', '-j']
+    option :output, required: true, banner: 'HDF-SCAN-RESULTS-JSON', aliases: '-o'
+    def asff_mapper
+      hdf = HeimdallTools::ASFFMapper.new(File.read(options[:json])).to_hdf
+      File.write(options[:output], hdf)
+      puts "\rHDF Generated:\n"
+      puts options[:output].to_s
+    end
+
     desc 'version', 'prints version'
     def version
       puts VERSION
