@@ -20,4 +20,5 @@ module HeimdallTools
   autoload :ScoutSuiteMapper, 'heimdall_tools/scoutsuite_mapper'
   autoload :XCCDFResultsMapper, 'heimdall_tools/xccdf_results_mapper'
   autoload :ASFFMapper, 'heimdall_tools/asff_mapper'
+  autoload :ProwlerMapper, 'heimdall_tools/prowler_mapper'
 end

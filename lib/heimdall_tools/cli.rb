@@ -166,6 +166,17 @@ module HeimdallTools
       puts options[:output].to_s
     end
 
+    desc 'prowler_mapper', 'prowler_mapper translates Prowler-derived AWS Security Finding Format results from concatenated JSON blobs to HDF-formatted JSON so as to be viewable on Heimdall'
+    long_desc Help.text(:prowler_mapper)
+    option :json, required: true, banner: 'PROWLER-ASFF-JSON', aliases: ['-i', '--input', '-j']
+    option :output, required: true, banner: 'HDF-SCAN-RESULTS-JSON', aliases: '-o'
+    def prowler_mapper
+      hdf = HeimdallTools::ProwlerMapper.new(File.read(options[:json])).to_hdf
+      File.write(options[:output], hdf)
+      puts "\rHDF Generated:\n"
+      puts options[:output].to_s
+    end
+
     desc 'version', 'prints version'
     def version
       puts VERSION
