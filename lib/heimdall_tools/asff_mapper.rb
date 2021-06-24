@@ -4,12 +4,10 @@ require 'heimdall_tools/hdf'
 
 RESOURCE_DIR = Pathname.new(__FILE__).join('../../data')
 
-# todo: remove all this nist mapping stuff or figure out alternative
-SCOUTSUITE_NIST_MAPPING_FILE = File.join(RESOURCE_DIR, 'scoutsuite-nist-mapping.csv')
+AWS_CONFIG_MAPPING_FILE = File.join(RESOURCE_DIR, 'aws-config-mapping.csv')
 
-# todo: confirm if these seem like reasonable mappings
 IMPACT_MAPPING = {
-  CRITICAL: 1.0,
+  CRITICAL: 0.9,
   HIGH: 0.7,
   MEDIUM: 0.5,
   LOW: 0.3,
@@ -42,21 +40,30 @@ module HeimdallTools
   class ASFFMapper
     def initialize(asff_json)
       begin
-        @scoutsuite_nist_mapping = parse_mapper
+        @aws_config_mapping = parse_mapper
       rescue StandardError => e
-        raise "Invalid Scout Suite to NIST mapping file:\nException: #{e}"
+        raise "Invalid AWS Config mapping file:\nException: #{e}"
       end
 
       begin
-        # TODO: support findings wrapper attribute - currently only expects a json object with just one control in it
+        asff_required_keys = %w(AwsAccountId CreatedAt Description GeneratorId Id ProductArn Resources SchemaVersion Severity Title Types UpdatedAt)
         @report = JSON.parse(asff_json)
+        if @report.length == 1 && @report.member?('Findings') && @report['Findings'].each { |finding| asff_required_keys.difference(finding.keys).none? }.all?
+          # ideal case that is spec compliant
+          # might need to ensure that the file is utf-8 encoded and remove a BOM if one exists
+        elsif asff_required_keys.difference(@report.keys).none?
+          # individual finding so have to add wrapping array
+          @report = { 'Findings' => [@report] }
+        else
+          raise "Not a findings file nor an individual finding"
+        end
       rescue StandardError => e
         raise "Invalid ASFF file provided:\nException: #{e}"
       end
     end
 
     def parse_mapper
-      csv_data = CSV.read(SCOUTSUITE_NIST_MAPPING_FILE, { encoding: 'UTF-8', headers: true, header_converters: :symbol })
+      csv_data = CSV.read(AWS_CONFIG_MAPPING_FILE, { encoding: 'UTF-8', headers: true, header_converters: :symbol })
       csv_data.map(&:to_hash)
     end
 
@@ -68,26 +75,21 @@ module HeimdallTools
       info = {}
       begin
         info['name'] = 'AWS Security Finding Format'
-        info['version'] = @report['SchemaVersion']
-        info['title'] = "ASFF finding (#{@report['Id']}) on account #{@report['AwsAccountId']}"
-        info['target_id'] = "Id: #{@report['Id']} Account: #{@report['AwsAccountId']} Product: #{@report['ProductArn']} Generator: #{@report['GeneratorId']}"
-        info['summary'] = @report['Types'].join(',')
-        info['attributes'] = @report.map { |k,v| create_attribute(k, v) } # potential todo: contains duplicate info, so can do like a filter against items like schemaversion that already have a dedicated spot
+        info['title'] = "ASFF findings"
         info
       rescue StandardError => e
         raise "Error extracting report info from ASFF file:\nException: #{e}"
       end
     end
 
-    # todo: can't figure out mappings even after looking at aws_config mappings
-    def nist_tag
-      # entries = @scoutsuite_nist_mapping.select { |x| rule.eql?(x[:rule].to_s) && !x[:nistid].nil? }
-      # tags = entries.map { |x| x[:nistid].split('|') }
-      # tags.empty? ? DEFAULT_NIST_TAG : tags.flatten.uniq
-      DEFAULT_NIST_TAG
+    # default value unless it comes from aws and has a aws config rule
+    def nist_tag(detail)
+      entries = detail.member?('ProductFields') && detail['ProductFields'].member?('RelatedAWSResources:0/type') && detail['ProductFields']['RelatedAWSResources:0/type'] == 'AWS::Config::ConfigRule' && detail['ProductFields'].member?('RelatedAWSResources:0/name') ? @aws_config_mapping.select { |rule| detail['ProductFields']['RelatedAWSResources:0/name'].include? rule[:awsconfigrulename] } : {}
+      tags = entries.map { |rule| rule[:nistid].split('|') }
+      tags.empty? ? DEFAULT_NIST_TAG : tags.flatten.uniq
     end
 
-    # potential todo: override with criticality if key exists?  what about confidence?  what about verificationstate?
+    # potential todo: override with criticality if key exists?
     def impact(severity)
       IMPACT_MAPPING[severity.to_sym]
     end
@@ -96,56 +98,71 @@ module HeimdallTools
       { data: data || NA_STRING, label: label || NA_STRING }
     end
 
-    # potential todo: recordstate - is it passing or skipped if the recordstate is archived (other option is active which is obv gonna be failed).  what about compliance?
-    def findings
+    # requires compliance->status attribute to be there - spec says it's optional
+    def findings(detail)
       finding = {}
-      if (@report['Severity'].key?('Label') ? @report['Severity']['Label'] : @report['Severity']['Normalized']).eql? 'INFORMATIONAL'
-        finding['status'] = 'skipped'
-        finding['skip_message'] = 'Skipped because it is only informational'
+      if detail.key?('Compliance') && detail['Compliance'].key?('Status')
+        case detail['Compliance']['Status']
+        when 'PASSED'
+          finding['status'] = 'passed'
+          finding['message'] = detail['Compliance'].key?('StatusReasons') ? detail['Compliance']['StatusReasons'].map { |reason| reason.flatten }.flatten.join("\n") : detail['Title']
+        when 'WARNING'
+          finding['status'] = 'skipped'
+          finding['skip_message'] = detail['Compliance'].key?('StatusReasons') ? detail['Compliance']['StatusReasons'].map { |reason| reason.flatten }.flatten.join("\n") : detail['Title']
+        when 'FAILED'
+          finding['status'] = 'failed'
+          finding['message'] = detail['Compliance'].key?('StatusReasons') ? detail['Compliance']['StatusReasons'].map { |reason| reason.flatten }.flatten.join("\n") : detail['Title']
+        when 'NOT_AVAILABLE'
+          # require 'pry'
+          # binding.pry
+          finding['status'] = 'error' # todo: primary meaning is that the check could not be performed due to a service outage or API error, but it's also overloaded to mean NOT_APPLICABLE so 'error' might not be the correct status value at all times
+          finding['message'] = detail['Compliance'].key?('StatusReasons') ? detail['Compliance']['StatusReasons'].map { |reason| reason.flatten }.flatten.join("\n") : detail['Title']
+        else
+          finding['status'] = 'no_status'
+          finding['message'] = detail['Compliance'].key?('StatusReasons') ? detail['Compliance']['StatusReasons'].map { |reason| reason.flatten }.flatten.join("\n") : detail['Title']
+        end
       else
-        finding['status'] = 'failed'
-        finding['message'] = "Product #{@report['ProductArn']} created finding #{@report['Id']} based off of generator #{@report['GeneratorId']} for account #{@report['Id']}"
+        finding['status'] = 'no_status'
+        finding['message'] = detail['Compliance'].key?('StatusReasons') ? detail['Compliance']['StatusReasons'].map { |reason| reason.flatten }.flatten.join("\n") : detail['Title']
       end
-      finding['code_desc'] = @report['Title']
-      finding['start_time'] = @report.key?('LastObservedAt') ? @report['LastObservedAt'] : @report['UpdatedAt']
+      finding['code_desc'] = detail['Title']
+      finding['start_time'] = detail.key?('LastObservedAt') ? detail['LastObservedAt'] : detail['UpdatedAt']
       [finding]
     end
 
     def to_hdf
       controls = []
-      printf("\rProcessing: %s", $spinner.next)
+      @report['Findings'].each do |detail|
+        printf("\rProcessing: %s", $spinner.next)
 
-      item = {}
-      item['id']                 = @report['Id']
-      item['title']              = @report['Title']
+        item = {}
+        item['id']                 = detail['Id']
+        item['title']              = detail['Title']
 
-      item['tags']               = { nist: nist_tag }
+        item['tags']               = { nist: nist_tag(detail) }
 
-      item['impact']             = impact(@report['Severity'].key?('Label') ? @report['Severity']['Label'] : @report['Severity']['Normalized']) # severity is required, but can be either 'label' or 'normalized' internally with 'label' being preferred.  other values can be in here too such as the original severity rating.
+        item['impact']             = impact(detail['Severity'].key?('Label') ? detail['Severity']['Label'] : detail['Severity']['Normalized']) # severity is required, but can be either 'label' or 'normalized' internally with 'label' being preferred.  other values can be in here too such as the original severity rating.
 
-      item['desc']               = @report['Description']
+        item['desc']               = detail['Description']
 
-      item['descriptions']       = []
-      item['descriptions']       << desc_tags(@report['Remediation']['Recommendation'].map { |k,v| v }.join("\n"), 'fix') unless @report['Remediation'].nil? || @report['Remediation']['Recommendation'].nil?
+        item['descriptions']       = []
+        item['descriptions']       << desc_tags(detail['Remediation']['Recommendation'].map { |k,v| v }.join("\n"), 'fix') unless detail['Remediation'].nil? || detail['Remediation']['Recommendation'].nil?
 
-      item['refs']               = []
-      item['refs']               << @report['SourceUrl'] unless @report['SourceUrl'].nil?
+        item['refs']               = []
+        item['refs']               << { url: detail['SourceUrl'] } unless detail['SourceUrl'].nil?
 
-      item['source_location']    = NA_HASH
-      item['code']               = NA_STRING
+        item['source_location']    = NA_HASH
+        item['code']               = JSON.pretty_generate(detail)
 
-      item['results']            = findings
+        item['results']            = findings(detail)
 
-      controls << item
+        controls << item
+      end
 
       scaninfo = extract_scaninfo
       results = HeimdallDataFormat.new(profile_name: scaninfo['name'],
-                                       version: scaninfo['version'],
                                        title: scaninfo['title'],
-                                       summary: scaninfo['summary'],
-                                       controls: controls,
-                                       target_id: scaninfo['target_id'],
-                                       attributes: scaninfo['attributes'])
+                                       controls: controls)
       results.to_hdf
     end
   end
