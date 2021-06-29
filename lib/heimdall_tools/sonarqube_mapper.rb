@@ -158,7 +158,7 @@ class Control
   # OWASP is stated specifically, ex owasp-a1
   #
   # SonarQube is inconsistent with tags (ex some cwe rules don't have cwe number in desc,) as noted below
-  TAG_DATA = {}.freeze # NOTE: We count on Ruby to preserve order for TAG_DATA
+  TAG_DATA = {} # NOTE: We count on Ruby to preserve order for TAG_DATA
   TAG_DATA[:cwe] = {
     # Some rules with cwe tag don't have cwe number in description!
     # Currently only squid:S2658, but it has OWASP tag so we can use that.
