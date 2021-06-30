@@ -113,8 +113,6 @@ module HeimdallTools
           finding['status'] = 'failed'
           finding['message'] = detail['Compliance'].key?('StatusReasons') ? detail['Compliance']['StatusReasons'].map { |reason| reason.flatten }.flatten.join("\n") : detail['Title']
         when 'NOT_AVAILABLE'
-          # require 'pry'
-          # binding.pry
           finding['status'] = 'error' # todo: primary meaning is that the check could not be performed due to a service outage or API error, but it's also overloaded to mean NOT_APPLICABLE so 'error' might not be the correct status value at all times
           finding['message'] = detail['Compliance'].key?('StatusReasons') ? detail['Compliance']['StatusReasons'].map { |reason| reason.flatten }.flatten.join("\n") : detail['Title']
         else
@@ -131,13 +129,13 @@ module HeimdallTools
     end
 
     def to_hdf
-      controls = []
+      title_groups = {}
       @report['Findings'].each do |detail|
         printf("\rProcessing: %s", $spinner.next)
 
         item = {}
-        item['id']                 = detail['Id']
-        item['title']              = detail['Title']
+        item['id']                 = detail['Title'] # intentionally swapped in order to group findings by title (with same-title findings becoming subtests)
+        item['title']              = detail['Id']
 
         item['tags']               = { nist: nist_tag(detail) }
 
@@ -156,7 +154,40 @@ module HeimdallTools
 
         item['results']            = findings(detail)
 
-        controls << item
+        title_groups[detail['Title']] = [] if title_groups[detail['Title']].nil?
+        title_groups[detail['Title']] << item
+      end
+
+      controls = []
+      title_groups.each do |title, details|
+        printf("\rProcessing: %s", $spinner.next)
+
+        if details.one?
+          controls << details[0]
+        else
+          item = {}
+          item['id'] = title # todo: this still looks gigabad
+          # require 'pry'
+          # binding.pry
+          item['title'] = details.map { |d| d['title'] }.uniq.join("\n")
+
+          item['tags'] = { nist: details.map { |d| d['tags'][:nist] }.flatten.uniq }
+
+          item['impact'] = details.map { |d| d['impact'] }.max
+
+          item['desc'] = details.map { |d| d['desc'] }.uniq.join("\n")
+
+          item['descriptions'] = details.map { |d| d['descriptions'] }.flatten.compact.reject(&:empty?).uniq
+
+          item['refs'] = details.map { |d| d['refs'] }.flatten.compact.reject(&:empty?).uniq
+
+          item['source_location'] = NA_HASH
+          item['code'] = "{ \"Findings\": [\n#{details.map { |d| d['code'] }.uniq.join(",\n")}\n]\n}" # todo: fix up the formatting some more - ex. findings key should be on new line
+
+          item['results'] = details.map { |d| d['results'] }.flatten.uniq
+
+          controls << item
+        end
       end
 
       scaninfo = extract_scaninfo
