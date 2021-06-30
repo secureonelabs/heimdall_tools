@@ -89,9 +89,13 @@ module HeimdallTools
       tags.empty? ? DEFAULT_NIST_TAG : tags.flatten.uniq
     end
 
-    # potential todo: override with criticality if key exists?
+    # asff file does not contain accurate severity information.  for now setting informational to medium.
     def impact(severity)
-      IMPACT_MAPPING[severity.to_sym]
+      if severity == 'INFORMATIONAL'
+        IMPACT_MAPPING[:MEDIUM]
+      else
+        IMPACT_MAPPING[severity.to_sym]
+      end
     end
 
     def desc_tags(data, label)
