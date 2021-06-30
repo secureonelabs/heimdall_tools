@@ -143,7 +143,7 @@ module HeimdallTools
 
         item['tags']               = { nist: nist_tag(detail) }
 
-        item['impact']             = impact(detail['Severity'].key?('Label') ? detail['Severity']['Label'] : detail['Severity']['Normalized']) # severity is required, but can be either 'label' or 'normalized' internally with 'label' being preferred.  other values can be in here too such as the original severity rating.
+        item['impact']             = detail['Severity'].key?('Label') ? impact(detail['Severity']['Label']) : detail['Severity']['Normalized']/100.0 # severity is required, but can be either 'label' or 'normalized' internally with 'label' being preferred.  other values can be in here too such as the original severity rating.
 
         item['desc']               = detail['Description']
 
