@@ -96,7 +96,10 @@ module HeimdallTools
     end
 
     def impact(detail)
-      if @standards.nil? || !detail.member?('ProductFields') || !(detail['ProductFields'].member?('StandardsSubscriptionArn') || detail['ProductFields'].member?('StandardsGuideSubscriptionArn'))
+      # there can be findings listed that are intentionally ignored due to the underlying control being superceded by a control from a different standard
+      if detail.member?('Workflow') && detail['Workflow'].member?('Status') && detail['Workflow']['Status'] == 'SUPPRESSED'
+        IMPACT_MAPPING[:INFORMATIONAL]
+      elsif @standards.nil? || !detail.member?('ProductFields') || !(detail['ProductFields'].member?('StandardsSubscriptionArn') || detail['ProductFields'].member?('StandardsGuideSubscriptionArn'))
         # severity is required, but can be either 'label' or 'normalized' internally with 'label' being preferred.  other values can be in here too such as the original severity rating.
         if detail['Severity'].key?('Label')
           severity = detail['Severity']['Label']
@@ -125,37 +128,49 @@ module HeimdallTools
         case detail['Compliance']['Status']
         when 'PASSED'
           finding['status'] = 'passed'
-          finding['message'] = detail['Compliance'].key?('StatusReasons') ? detail['Compliance']['StatusReasons'].map { |reason| reason.flatten }.flatten.join("\n") : detail['Title']
+          finding['message'] = detail['Compliance']['StatusReasons'].map { |reason| reason.flatten }.flatten.join("\n") unless !detail['Compliance'].key?('StatusReasons')
         when 'WARNING'
           finding['status'] = 'skipped'
-          finding['skip_message'] = detail['Compliance'].key?('StatusReasons') ? detail['Compliance']['StatusReasons'].map { |reason| reason.flatten }.flatten.join("\n") : detail['Title']
+          finding['skip_message'] = detail['Compliance']['StatusReasons'].map { |reason| reason.flatten }.flatten.join("\n") unless !detail['Compliance'].key?('StatusReasons')
         when 'FAILED'
           finding['status'] = 'failed'
-          finding['message'] = detail['Compliance'].key?('StatusReasons') ? detail['Compliance']['StatusReasons'].map { |reason| reason.flatten }.flatten.join("\n") : detail['Title']
+          finding['message'] = detail['Compliance']['StatusReasons'].map { |reason| reason.flatten }.flatten.join("\n") unless !detail['Compliance'].key?('StatusReasons')
         when 'NOT_AVAILABLE'
-          finding['status'] = 'error' # todo: primary meaning is that the check could not be performed due to a service outage or API error, but it's also overloaded to mean NOT_APPLICABLE so 'error' might not be the correct status value at all times
-          finding['message'] = detail['Compliance'].key?('StatusReasons') ? detail['Compliance']['StatusReasons'].map { |reason| reason.flatten }.flatten.join("\n") : detail['Title']
+          finding['status'] = 'skipped' # primary meaning is that the check could not be performed due to a service outage or API error, but it's also overloaded to mean NOT_APPLICABLE so technically 'skipped' or 'error' could be applicable, but AWS seems to do the equivalent of skipped
+          finding['message'] = detail['Compliance']['StatusReasons'].map { |reason| reason.flatten }.flatten.join("\n") unless !detail['Compliance'].key?('StatusReasons')
         else
           finding['status'] = 'no_status'
-          finding['message'] = detail['Compliance'].key?('StatusReasons') ? detail['Compliance']['StatusReasons'].map { |reason| reason.flatten }.flatten.join("\n") : detail['Title']
+          finding['message'] = detail['Compliance']['StatusReasons'].map { |reason| reason.flatten }.flatten.join("\n") unless !detail['Compliance'].key?('StatusReasons')
         end
       else
         finding['status'] = 'no_status'
-        finding['message'] = detail['Compliance'].key?('StatusReasons') ? detail['Compliance']['StatusReasons'].map { |reason| reason.flatten }.flatten.join("\n") : detail['Title']
+        finding['message'] = detail['Compliance']['StatusReasons'].map { |reason| reason.flatten }.flatten.join("\n") unless !detail['Compliance'].key?('StatusReasons')
       end
       finding['code_desc'] = detail['Title']
       finding['start_time'] = detail.key?('LastObservedAt') ? detail['LastObservedAt'] : detail['UpdatedAt']
       [finding]
     end
 
+    # todo: create aws submapper like prowler but this one gets the raw data from aws directly
+    # todo: verify if prowler still works and add the id thing to each finding which is to extract [textNUMBER] from the title text
+    # todo: finding id + resources->type and id as the subtest title thingy if they exists
     def to_hdf
-      title_groups = {}
+      id_groups = {}
       @report['Findings'].each do |detail|
         printf("\rProcessing: %s", $spinner.next)
 
         item = {}
-        item['id'] = detail['Title'] # intentionally swapped in order to group findings by title (with same-title findings becoming subtests)
-        item['title'] = detail['Id']
+        item['id'] = if detail.member?('ProductFields') && detail['ProductFields'].member?('ControlId')
+                       detail['ProductFields']['ControlId']
+                     elsif detail.member?('ProductFields') && detail['ProductFields'].member?('RuleId')
+                       detail['ProductFields']['RuleId']
+                     elsif detail.member?('ProductFields') && detail['ProductFields'].member?('MITRESAFHDFId') # for our custom mappers
+                       detail['ProductFields']['MITRESAFHDFId']
+                     else
+                       detail['Title'] # subfindings are grouped based on id so using the ideal case if it's there otherwise the guaranteed attribute
+                     end
+        item['title'] = "Finding id: #{detail['Id']}; Resources: [#{detail['Resources'].map { |r| "Type: #{r['Type']}, Id: #{r['Id']}" }.join(', ') }]"
+        item['Title'] = detail['Title']
 
         item['tags'] = { nist: nist_tag(detail) }
 
@@ -174,22 +189,22 @@ module HeimdallTools
 
         item['results'] = findings(detail)
 
-        title_groups[detail['Title']] = [] if title_groups[detail['Title']].nil?
-        title_groups[detail['Title']] << item
+        id_groups[item['id']] = [] if id_groups[item['id']].nil?
+        id_groups[item['id']] << item
       end
 
       controls = []
-      title_groups.each do |title, details|
+      id_groups.each do |id, details|
         printf("\rProcessing: %s", $spinner.next)
 
         if details.one?
-          controls << details[0]
+          controls << details[0] # not sure what to do to get the titles working properly cause there's no title attribute for a subfinding so these ones get the finding/resource thing and no actual title whereas the ones with multiple subfindings get a title but no finding/resources
         else
           item = {}
-          item['id'] = title # todo: this still looks gigabad
-          # require 'pry'
+          item['id'] = id
+          # require 'pry' # todo: remove
           # binding.pry
-          item['title'] = details.map { |d| d['title'] }.uniq.join("\n")
+          item['title'] = details.map { |d| d['Title'] }.uniq.join("\n")
 
           item['tags'] = { nist: details.map { |d| d['tags'][:nist] }.flatten.uniq }
 
