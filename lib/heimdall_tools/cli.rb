@@ -70,7 +70,7 @@ module HeimdallTools
     option :output_prefix, required: true, aliases: '-o'
     def snyk_mapper
       hdfs = HeimdallTools::SnykMapper.new(File.read(options[:json]), options[:name]).to_hdf
-      puts "\r\HDF Generated:\n"
+      puts "\rHDF Generated:\n"
       hdfs.each_key do |host|
         File.write("#{options[:output_prefix]}-#{host}.json", hdfs[host])
         puts "#{options[:output_prefix]}-#{host}.json"
@@ -84,7 +84,7 @@ module HeimdallTools
     def nikto_mapper
       hdf = HeimdallTools::NiktoMapper.new(File.read(options[:json])).to_hdf
       File.write(options[:output], hdf)
-      puts "\r\HDF Generated:\n"
+      puts "\rHDF Generated:\n"
       puts options[:output].to_s
     end
 
@@ -95,7 +95,7 @@ module HeimdallTools
     def jfrog_xray_mapper
       hdf = HeimdallTools::JfrogXrayMapper.new(File.read(options[:json])).to_hdf
       File.write(options[:output], hdf)
-      puts "\r\HDF Generated:\n"
+      puts "\rHDF Generated:\n"
       puts options[:output].to_s
     end
 
@@ -106,7 +106,7 @@ module HeimdallTools
     def dbprotect_mapper
       hdf = HeimdallTools::DBProtectMapper.new(File.read(options[:xml])).to_hdf
       File.write(options[:output], hdf)
-      puts "\r\HDF Generated:\n"
+      puts "\rHDF Generated:\n"
       puts options[:output].to_s
     end
 
@@ -117,7 +117,7 @@ module HeimdallTools
     def aws_config_mapper
       hdf = HeimdallTools::AwsConfigMapper.new(options[:custom_mapping]).to_hdf
       File.write(options[:output], hdf)
-      puts "\r\HDF Generated:\n"
+      puts "\rHDF Generated:\n"
       puts options[:output].to_s
     end
 
@@ -128,7 +128,7 @@ module HeimdallTools
     def netsparker_mapper
       hdf = HeimdallTools::NetsparkerMapper.new(File.read(options[:xml])).to_hdf
       File.write(options[:output], hdf)
-      puts "\r\HDF Generated:\n"
+      puts "\rHDF Generated:\n"
       puts options[:output].to_s
     end
 
@@ -140,7 +140,7 @@ module HeimdallTools
     def sarif_mapper
       hdf = HeimdallTools::SarifMapper.new(File.read(options[:json])).to_hdf
       File.write(options[:output], hdf)
-      puts "\r\HDF Generated:\n"
+      puts "\rHDF Generated:\n"
       puts options[:output].to_s
     end
 
@@ -158,9 +158,11 @@ module HeimdallTools
     desc 'asff_mapper', 'asff_mapper translates AWS Security Finding Format results from JSON to HDF-formatted JSON so as to be viewable on Heimdall'
     long_desc Help.text(:asff_mapper)
     option :json, required: true, banner: 'ASFF-FINDING-JSON', aliases: ['-i', '--input', '-j']
+    option :enabled, required: false, banner: 'ASFF-ENABLED-STANDARDS-JSON', aliases: ['-e', '--input-enabled-standards']
+    option :standard, required: false, type: :array, banner: 'ASFF-STANDARD-JSON', aliases: ['-s', '--input-standard']
     option :output, required: true, banner: 'HDF-SCAN-RESULTS-JSON', aliases: '-o'
     def asff_mapper
-      hdf = HeimdallTools::ASFFMapper.new(File.read(options[:json])).to_hdf
+      hdf = HeimdallTools::ASFFMapper.new(File.read(options[:json]), options[:enabled].nil? ? nil : File.read(options[:enabled]), options[:standard].empty? ? nil : options[:standard].map { |filename| File.read(filename) }).to_hdf
       File.write(options[:output], hdf)
       puts "\rHDF Generated:\n"
       puts options[:output].to_s

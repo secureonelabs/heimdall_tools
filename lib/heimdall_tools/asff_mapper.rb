@@ -38,7 +38,8 @@ end
 
 module HeimdallTools
   class ASFFMapper
-    def initialize(asff_json)
+    # the optional arguments are derived from AWS cli commands (get-enabled-standards and describe-standards) and probably only work AWS ASFF files
+    def initialize(asff_json, enabled_standards_json = nil, standards_json_array = nil)
       begin
         @aws_config_mapping = parse_mapper
       rescue StandardError => e
@@ -57,6 +58,11 @@ module HeimdallTools
         else
           raise "Not a findings file nor an individual finding"
         end
+
+        enabled = JSON.parse(enabled_standards_json) unless enabled_standards_json.nil?
+        standards_array = standards_json_array.map { |j| JSON.parse(j) } unless standards_json_array.nil?
+        @standards = enabled['StandardsSubscriptions'].to_h { |s| [s['StandardsSubscriptionArn'], standards_array.find { |st| st['Controls'][0]['StandardsControlArn'].include?(s['StandardsSubscriptionArn'].gsub(':subscription', ':control')) }] }.compact unless enabled.nil?
+
       rescue StandardError => e
         raise "Invalid ASFF file provided:\nException: #{e}"
       end
@@ -89,12 +95,22 @@ module HeimdallTools
       tags.empty? ? DEFAULT_NIST_TAG : tags.flatten.uniq
     end
 
-    # asff file does not contain accurate severity information.  for now setting informational to medium.
-    def impact(severity)
-      if severity == 'INFORMATIONAL'
-        IMPACT_MAPPING[:MEDIUM]
+    def impact(detail)
+      if @standards.nil? || !detail.member?('ProductFields') || !(detail['ProductFields'].member?('StandardsSubscriptionArn') || detail['ProductFields'].member?('StandardsGuideSubscriptionArn'))
+        # severity is required, but can be either 'label' or 'normalized' internally with 'label' being preferred.  other values can be in here too such as the original severity rating.
+        if detail['Severity'].key?('Label')
+          severity = detail['Severity']['Label']
+          # asff file does not contain accurate severity information - when additional context, i.e. standards, is not provided, set informational to medium.
+          if severity == 'INFORMATIONAL'
+            IMPACT_MAPPING[:MEDIUM]
+          else
+            IMPACT_MAPPING[severity.to_sym]
+          end
+        else
+          detail['Severity']['Normalized']/100.0
+        end
       else
-        IMPACT_MAPPING[severity.to_sym]
+        IMPACT_MAPPING[@standards[detail['ProductFields'][detail['ProductFields'].member?('StandardsSubscriptionArn') ? 'StandardsSubscriptionArn' : 'StandardsGuideSubscriptionArn']]['Controls'].find { |c| c['StandardsControlArn'] == detail['ProductFields']['StandardsControlArn'] }['SeverityRating'].to_sym]
       end
     end
 
@@ -138,25 +154,25 @@ module HeimdallTools
         printf("\rProcessing: %s", $spinner.next)
 
         item = {}
-        item['id']                 = detail['Title'] # intentionally swapped in order to group findings by title (with same-title findings becoming subtests)
-        item['title']              = detail['Id']
+        item['id'] = detail['Title'] # intentionally swapped in order to group findings by title (with same-title findings becoming subtests)
+        item['title'] = detail['Id']
 
-        item['tags']               = { nist: nist_tag(detail) }
+        item['tags'] = { nist: nist_tag(detail) }
 
-        item['impact']             = detail['Severity'].key?('Label') ? impact(detail['Severity']['Label']) : detail['Severity']['Normalized']/100.0 # severity is required, but can be either 'label' or 'normalized' internally with 'label' being preferred.  other values can be in here too such as the original severity rating.
+        item['impact'] = impact(detail)
 
-        item['desc']               = detail['Description']
+        item['desc'] = detail['Description']
 
-        item['descriptions']       = []
-        item['descriptions']       << desc_tags(detail['Remediation']['Recommendation'].map { |k,v| v }.join("\n"), 'fix') unless detail['Remediation'].nil? || detail['Remediation']['Recommendation'].nil?
+        item['descriptions'] = []
+        item['descriptions'] << desc_tags(detail['Remediation']['Recommendation'].map { |k,v| v }.join("\n"), 'fix') unless detail['Remediation'].nil? || detail['Remediation']['Recommendation'].nil?
 
-        item['refs']               = []
-        item['refs']               << { url: detail['SourceUrl'] } unless detail['SourceUrl'].nil?
+        item['refs'] = []
+        item['refs'] << { url: detail['SourceUrl'] } unless detail['SourceUrl'].nil?
 
-        item['source_location']    = NA_HASH
-        item['code']               = JSON.pretty_generate(detail)
+        item['source_location'] = NA_HASH
+        item['code'] = JSON.pretty_generate(detail)
 
-        item['results']            = findings(detail)
+        item['results'] = findings(detail)
 
         title_groups[detail['Title']] = [] if title_groups[detail['Title']].nil?
         title_groups[detail['Title']] << item
