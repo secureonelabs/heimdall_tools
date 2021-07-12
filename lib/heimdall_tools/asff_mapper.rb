@@ -146,7 +146,7 @@ module HeimdallTools
         finding['status'] = 'no_status'
         finding['message'] = detail['Compliance']['StatusReasons'].map { |reason| reason.flatten }.flatten.join("\n") unless !detail['Compliance'].key?('StatusReasons')
       end
-      finding['code_desc'] = detail['Title']
+      finding['code_desc'] = "Resources: [#{detail['Resources'].map { |r| "Type: #{r['Type']}, Id: #{r['Id']}" }.join(', ') }]"
       finding['start_time'] = detail.key?('LastObservedAt') ? detail['LastObservedAt'] : detail['UpdatedAt']
       [finding]
     end
@@ -169,8 +169,7 @@ module HeimdallTools
                      else
                        detail['Title'] # subfindings are grouped based on id so using the ideal case if it's there otherwise the guaranteed attribute
                      end
-        item['title'] = "Finding id: #{detail['Id']}; Resources: [#{detail['Resources'].map { |r| "Type: #{r['Type']}, Id: #{r['Id']}" }.join(', ') }]"
-        item['Title'] = detail['Title']
+        item['title'] = detail['Title']
 
         item['tags'] = { nist: nist_tag(detail) }
 
@@ -204,7 +203,7 @@ module HeimdallTools
           item['id'] = id
           # require 'pry' # todo: remove
           # binding.pry
-          item['title'] = details.map { |d| d['Title'] }.uniq.join("\n")
+          item['title'] = details.map { |d| d['title'] }.uniq.join("\n")
 
           item['tags'] = { nist: details.map { |d| d['tags'][:nist] }.flatten.uniq }
 
