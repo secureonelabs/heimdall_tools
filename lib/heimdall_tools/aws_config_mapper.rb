@@ -8,7 +8,7 @@ RESOURCE_DIR = Pathname.new(__FILE__).join('../../data')
 AWS_CONFIG_MAPPING_FILE = File.join(RESOURCE_DIR, 'aws-config-mapping.csv')
 
 NOT_APPLICABLE_MSG = 'No AWS resources found to evaluate complaince for this rule'.freeze
-INSUFFICIENT_DATA_MSG = 'Not enough data has been collectd to determine compliance yet.'.freeze
+INSUFFICIENT_DATA_MSG = 'Not enough data has been collected to determine compliance yet.'.freeze
 
 ##
 # HDF mapper for use with AWS Config rules.
