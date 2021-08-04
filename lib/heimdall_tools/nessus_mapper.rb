@@ -92,18 +92,16 @@ module HeimdallTools
 
     def finding(issue, timestamp)
       finding = {}
-      # if compliance-result field, this is a policy compliance result entry
-      # nessus policy compliance result provides a pass/fail data
-      # For non policy compliance  results are defaulted to failed
       if issue['compliance-result']
-        if issue['compliance-result'].eql?('PASSED')
+        case issue['compliance-result']
+        when "PASSED"
           finding['status'] = 'passed'
-        elsif issue['compliance-result'].eql?('FAILED')
+        when "FAILED"
           finding['status'] = 'failed'
-        elsif issue['compliance-result'].eql?('WARNING')
+        when "WARNING"
           finding['status'] = 'skipped'
-        elsif issue['compliance-result'].eql?('ERROR')
-          finding['status'] = 'error'
+        else
+          finding['status'] = 'failed'
         end
       else
         finding['status'] = 'failed'

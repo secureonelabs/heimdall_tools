@@ -77,9 +77,15 @@ jobs:
       - name: Test nessus_mapper
         run: |
           heimdall_tools nessus_mapper -x ./sample_jsons/nessus_mapper/sample_input_report/nessus_sample.nessus -o nessus.json
-          jq 'del(.version, .platform.release)' nessus.json-ip-10-10-23-102.json > nessus_jq.json
-          jq 'del(.version, .platform.release)' ./sample_jsons/nessus_mapper/nessus_sample_hdf.json > nessus_sample_hdf.json
-          diff nessus_sample_hdf.json nessus_jq.json
+          jq 'del(.version, .platform.release)' nessus.json-ip-10-10-23-102.json > nessus-jq.json-ip-10-10-23-102.json
+          jq 'del(.version, .platform.release)' ./sample_jsons/nessus_mapper/nessus.json-ip-10-10-23-102.json > nessus-sample-jq.json-ip-10-10-23-102.json
+          diff nessus-sample-jq.json-ip-10-10-23-102.json nessus-jq.json-ip-10-10-23-102.json
+          jq 'del(.version, .platform.release)' nessus.json-ip-10-10-24-231.json > nessus-jq.json-ip-10-10-24-231.json
+          jq 'del(.version, .platform.release)' ./sample_jsons/nessus_mapper/nessus.json-ip-10-10-24-231.json > nessus-sample-jq.json-ip-10-10-24-231.json
+          diff nessus-sample-jq.json-ip-10-10-24-231.json nessus-jq.json-ip-10-10-24-231.json
+          jq 'del(.version, .platform.release)' nessus.json-ip-10-10-37-43.json > nessus-jq.json-ip-10-10-37-43.json
+          jq 'del(.version, .platform.release)' ./sample_jsons/nessus_mapper/nessus.json-ip-10-10-37-43.json > nessus-sample-jq.json-ip-10-10-37-43.json
+          diff nessus-sample-jq.json-ip-10-10-37-43.json nessus-jq.json-ip-10-10-37-43.json
       - name: Test scoutsuite mapper
         run: |
           heimdall_tools scoutsuite_mapper -i ./sample_jsons/scoutsuite_mapper/sample_input_jsons/scoutsuite_sample.js -o scoutsuite_output.json

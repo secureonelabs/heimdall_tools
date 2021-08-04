@@ -10,6 +10,7 @@ AllCops:
   - 'test/**/*'
   - 'examples/plugins/train-*/test/**/*'
   - 'vendor/**/*'
+  - 'sample_jsons/**/*'
 Style/Documentation:
   Enabled: false
 Layout/ParameterAlignment:
