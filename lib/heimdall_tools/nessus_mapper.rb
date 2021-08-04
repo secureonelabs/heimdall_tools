@@ -96,7 +96,15 @@ module HeimdallTools
       # nessus policy compliance result provides a pass/fail data
       # For non policy compliance  results are defaulted to failed
       if issue['compliance-result']
-        finding['status'] = issue['compliance-result'].eql?('PASSED') ? 'passed' : 'failed'
+        if issue['compliance-result'].eql?('PASSED')
+          finding['status'] = 'passed'
+        elsif issue['compliance-result'].eql?('FAILED')
+          finding['status'] = 'failed'
+        elsif issue['compliance-result'].eql?('WARNING')
+          finding['status'] = 'skipped'
+        elsif issue['compliance-result'].eql?('ERROR')
+          finding['status'] = 'error'
+        end
       else
         finding['status'] = 'failed'
       end
