@@ -6,7 +6,6 @@ require 'heimdall_tools/asff_compatible_products/firewall_manager'
 require 'heimdall_tools/asff_compatible_products/prowler'
 require 'heimdall_tools/asff_compatible_products/securityhub'
 
-
 module HeimdallTools
   DEFAULT_NIST_TAG = %w{SA-11 RA-5}.freeze
 
@@ -40,19 +39,19 @@ module HeimdallTools
     }.freeze
 
     PRODUCT_ARN_MAPPING = {
-      /arn:.+:securityhub:.+:.*:product\/aws\/firewall-manager/ => FirewallManager,
-      /arn:.+:securityhub:.+:.*:product\/aws\/securityhub/ => SecurityHub,
-      /arn:.+:securityhub:.+:.*:product\/prowler\/prowler/ => Prowler
+      %r{arn:.+:securityhub:.+:.*:product/aws/firewall-manager} => FirewallManager,
+      %r{arn:.+:securityhub:.+:.*:product/aws/securityhub} => SecurityHub,
+      %r{arn:.+:securityhub:.+:.*:product/prowler/prowler} => Prowler
     }.freeze
 
     def initialize(asff_json, securityhub_standards_json_array: nil, meta: nil)
       @meta = meta
 
       @supporting_docs = {}
-      @supporting_docs[SecurityHub] = SecurityHub.supporting_docs({standards: securityhub_standards_json_array})
+      @supporting_docs[SecurityHub] = SecurityHub.supporting_docs({ standards: securityhub_standards_json_array })
 
       begin
-        asff_required_keys = %w(AwsAccountId CreatedAt Description GeneratorId Id ProductArn Resources SchemaVersion Severity Title Types UpdatedAt)
+        asff_required_keys = %w{AwsAccountId CreatedAt Description GeneratorId Id ProductArn Resources SchemaVersion Severity Title Types UpdatedAt}
         @report = JSON.parse(asff_json)
         if @report.length == 1 && @report.member?('Findings') && @report['Findings'].each { |finding| asff_required_keys.difference(finding.keys).none? }.all?
           # ideal case that is spec compliant
@@ -61,7 +60,7 @@ module HeimdallTools
           # individual finding so have to add wrapping array
           @report = { 'Findings' => [@report] }
         else
-          raise "Not a findings file nor an individual finding"
+          raise 'Not a findings file nor an individual finding'
         end
       rescue StandardError => e
         raise "Invalid ASFF file provided:\nException: #{e}"
@@ -79,12 +78,10 @@ module HeimdallTools
         keywords = { encode: method(:encode) }
         keywords = keywords.merge(@supporting_docs[PRODUCT_ARN_MAPPING[arn || product]]) if @supporting_docs.member?(PRODUCT_ARN_MAPPING[arn || product])
         PRODUCT_ARN_MAPPING[arn || product].send(func, data, **keywords)
+      elsif default.is_a? Proc
+        default.call
       else
-        if default.is_a? Proc
-          default.call
-        else
-          default
-        end
+        default
       end
     end
 
@@ -100,7 +97,7 @@ module HeimdallTools
         imp = :INFORMATIONAL
       else
         # severity is required, but can be either 'label' or 'normalized' internally with 'label' being preferred.  other values can be in here too such as the original severity rating.
-        default = Proc.new { finding['Severity'].key?('Label') ? finding['Severity']['Label'].to_sym : finding['Severity']['Normalized']/100.0 }
+        default = proc { finding['Severity'].key?('Label') ? finding['Severity']['Label'].to_sym : finding['Severity']['Normalized']/100.0 }
         imp = external_product_handler(finding['ProductArn'], finding, :finding_impact, default)
       end
       imp.is_a?(Symbol) ? IMPACT_MAPPING[imp] : imp
@@ -140,7 +137,7 @@ module HeimdallTools
 
       subfinding['code_desc'] = external_product_handler(finding['ProductArn'], finding, :subfindings_code_desc, '')
       subfinding['code_desc'] += '; ' unless subfinding['code_desc'].empty?
-      subfinding['code_desc'] += "Resources: [#{finding['Resources'].map { |r| "Type: #{encode(r['Type'])}, Id: #{encode(r['Id'])}#{', Partition: ' + encode(r['Partition']) if r.key?('Partition')}#{', Region: ' + encode(r['Region']) if r.key?('Region')}" }.join(', ') }]"
+      subfinding['code_desc'] += "Resources: [#{finding['Resources'].map { |r| "Type: #{encode(r['Type'])}, Id: #{encode(r['Id'])}#{", Partition: #{encode(r['Partition'])}" if r.key?('Partition')}#{", Region: #{encode(r['Region'])}" if r.key?('Region')}" }.join(', ')}]"
 
       subfinding['start_time'] = finding.key?('LastObservedAt') ? finding['LastObservedAt'] : finding['UpdatedAt']
 
@@ -167,7 +164,7 @@ module HeimdallTools
         item['desc'] = encode(finding['Description'])
 
         item['descriptions'] = []
-        item['descriptions'] << desc_tags(finding['Remediation']['Recommendation'].map { |k,v| encode(v) }.join("\n"), 'fix') if finding.key?('Remediation') && finding['Remediation'].key?('Recommendation')
+        item['descriptions'] << desc_tags(finding['Remediation']['Recommendation'].map { |_k, v| encode(v) }.join("\n"), 'fix') if finding.key?('Remediation') && finding['Remediation'].key?('Recommendation')
 
         item['refs'] = []
         item['refs'] << { url: finding['SourceUrl'] } if finding.key?('SourceUrl')
@@ -203,7 +200,7 @@ module HeimdallTools
           # add product name to id if any ids are the same across products
           item['id'] = product_groups.filter { |pg| pg != product }.values.any? { |ig| ig.keys.include?(id) } ? "[#{product_name}] #{id}" : id
 
-          item['title'] = "#{product_name}: #{group.map { |d| d['title'] }.uniq.join(";")}"
+          item['title'] = "#{product_name}: #{group.map { |d| d['title'] }.uniq.join(';')}"
 
           item['tags'] = { nist: group.map { |d| d['tags'][:nist] }.flatten.uniq }
 
@@ -216,7 +213,7 @@ module HeimdallTools
           item['refs'] = group.map { |d| d['refs'] }.flatten.compact.reject(&:empty?).uniq
 
           item['source_location'] = NA_HASH
-          item['code'] = JSON.pretty_generate({ "Findings": findings })
+          item['code'] = JSON.pretty_generate({ Findings: findings })
 
           item['results'] = group.map { |d| d['results'] }.flatten.uniq
 
@@ -224,8 +221,8 @@ module HeimdallTools
         end
       end
 
-      results = HeimdallDataFormat.new(profile_name: @meta && @meta.key?('name') ? @meta['name'] : 'AWS Security Finding Format',
-                                       title: @meta && @meta.key?('title') ? @meta['title'] : "ASFF findings",
+      results = HeimdallDataFormat.new(profile_name: @meta&.key?('name') ? @meta['name'] : 'AWS Security Finding Format',
+                                       title: @meta&.key?('title') ? @meta['title'] : 'ASFF findings',
                                        controls: controls)
       results.to_hdf
     end

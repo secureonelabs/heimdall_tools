@@ -28,8 +28,8 @@ Gem::Specification.new do |spec|
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths = ['lib']
 
-  spec.add_runtime_dependency 'aws-sdk-securityhub', '~> 1'
   spec.add_runtime_dependency 'aws-sdk-configservice', '~> 1'
+  spec.add_runtime_dependency 'aws-sdk-securityhub', '~> 1'
   spec.add_runtime_dependency 'csv', '~> 3.1'
   spec.add_runtime_dependency 'git-lite-version-bump', '>= 0.17.2'
   spec.add_runtime_dependency 'htmlentities', '~> 4.3.4'

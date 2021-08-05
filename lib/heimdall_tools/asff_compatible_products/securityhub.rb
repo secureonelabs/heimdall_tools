@@ -25,17 +25,15 @@ module HeimdallTools
       { controls: controls, aws_config_mapping: aws_config_mapping }
     end
 
-    def self.finding_id(finding, *, controls: nil, encode:, **)
+    def self.finding_id(finding, *, encode:, controls: nil, **)
       ret = if !controls.nil? && !(control = corresponding_control(controls, finding)).nil?
               control['ControlId']
+            elsif finding['ProductFields'].member?('ControlId') # check if aws
+              finding['ProductFields']['ControlId']
+            elsif finding['ProductFields'].member?('RuleId') # check if cis
+              finding['ProductFields']['RuleId']
             else
-              if finding['ProductFields'].member?('ControlId') # check if aws
-                finding['ProductFields']['ControlId']
-              elsif finding['ProductFields'].member?('RuleId') # check if cis
-                finding['ProductFields']['RuleId']
-              else
-                finding['GeneratorId'].split('/')[-1]
-              end
+              finding['GeneratorId'].split('/')[-1]
             end
       encode.call(ret)
     end
@@ -54,10 +52,11 @@ module HeimdallTools
 
     def self.finding_nist_tag(finding, *, aws_config_mapping:, **)
       return {} unless finding['ProductFields']['RelatedAWSResources:0/type'] == 'AWS::Config::ConfigRule'
+
       aws_config_mapping.select { |rule| finding['ProductFields']['RelatedAWSResources:0/name'].include? rule[:awsconfigrulename] }
     end
 
-    def self.finding_title(finding, *, controls: nil, encode:, **)
+    def self.finding_title(finding, *, encode:, controls: nil, **)
       ret = if !controls.nil? && !(control = corresponding_control(controls, finding)).nil?
               control['Title']
             else
