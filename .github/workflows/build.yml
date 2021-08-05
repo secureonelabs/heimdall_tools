@@ -86,3 +86,15 @@ jobs:
           jq 'del(.version, .platform.release)' scoutsuite_output.json > scoutsuite_output_jq.json
           jq 'del(.version, .platform.release)' ./sample_jsons/scoutsuite_mapper/scoutsuite_hdf.json > scoutsuite_sample.json
           diff scoutsuite_sample.json scoutsuite_output_jq.json
+      - name: Test asff mapper
+        run: |
+          heimdall_tools asff_mapper -i ./sample_jsons/asff_mapper/sample_input_jsons/asff_sample.json --sh ./sample_jsons/asff_mapper/sample_input_jsons/aws_cis_standard.json -o asff_output.json
+          jq 'del(.version, .platform.release)' asff_output.json > asff_output_jq.json
+          jq 'del(.version, .platform.release)' ./sample_jsons/asff_mapper/asff_hdf.json > asff_sample.json
+          diff asff_sample.json asff_output_jq.json
+      - name: Test prowler mapper
+        run: |
+          heimdall_tools prowler_mapper -i ./sample_jsons/prowler_mapper/sample_input_jsons/prowler_sample.asff-json -o prowler_output.json
+          jq 'del(.version, .platform.release)' prowler_output.json > prowler_output_jq.json
+          jq 'del(.version, .platform.release)' ./sample_jsons/prowler_mapper/prowler_hdf.json > prowler_sample.json
+          diff prowler_sample.json prowler_output_jq.json

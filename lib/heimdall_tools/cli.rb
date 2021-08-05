@@ -158,11 +158,10 @@ module HeimdallTools
     desc 'asff_mapper', 'asff_mapper translates AWS Security Finding Format results from JSON to HDF-formatted JSON so as to be viewable on Heimdall'
     long_desc Help.text(:asff_mapper)
     option :json, required: true, banner: 'ASFF-FINDING-JSON', aliases: ['-i', '--input', '-j']
-    option :enabled, required: false, banner: 'ASFF-ENABLED-STANDARDS-JSON', aliases: ['-e', '--input-enabled-standards']
-    option :standard, required: false, type: :array, banner: 'ASFF-STANDARD-JSON', aliases: ['-s', '--input-standard']
+    option :securityhub_standards, required: false, type: :array, banner: 'ASFF-SECURITYHUB-STANDARDS-JSON', aliases: ['--sh', '--input-securityhub-standards']
     option :output, required: true, banner: 'HDF-SCAN-RESULTS-JSON', aliases: '-o'
     def asff_mapper
-      hdf = HeimdallTools::ASFFMapper.new(File.read(options[:json]), options[:enabled].nil? ? nil : File.read(options[:enabled]), options[:standard].empty? ? nil : options[:standard].map { |filename| File.read(filename) }).to_hdf
+      hdf = HeimdallTools::ASFFMapper.new(File.read(options[:json]), securityhub_standards_json_array: options[:securityhub_standards].nil? ? nil : options[:securityhub_standards].map { |filename| File.read(filename) }).to_hdf
       File.write(options[:output], hdf)
       puts "\rHDF Generated:\n"
       puts options[:output].to_s

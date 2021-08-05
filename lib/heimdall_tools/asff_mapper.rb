@@ -1,50 +1,55 @@
 require 'json'
-require 'csv'
+require 'htmlentities'
+
 require 'heimdall_tools/hdf'
+require 'heimdall_tools/asff_compatible_products/firewall_manager'
+require 'heimdall_tools/asff_compatible_products/prowler'
+require 'heimdall_tools/asff_compatible_products/securityhub'
 
-RESOURCE_DIR = Pathname.new(__FILE__).join('../../data')
-
-AWS_CONFIG_MAPPING_FILE = File.join(RESOURCE_DIR, 'aws-config-mapping.csv')
-
-IMPACT_MAPPING = {
-  CRITICAL: 0.9,
-  HIGH: 0.7,
-  MEDIUM: 0.5,
-  LOW: 0.3,
-  INFORMATIONAL: 0.0
-}.freeze
-
-DEFAULT_NIST_TAG = %w{SA-11 RA-5}.freeze
-
-INSPEC_INPUTS_MAPPING = {
-  string: 'String',
-  numeric: 'Numeric',
-  regexp: 'Regexp',
-  array: 'Array',
-  hash: 'Hash',
-  boolean: 'Boolean',
-  any: 'Any'
-}.freeze
-
-# Loading spinner sign
-$spinner = Enumerator.new do |e|
-  loop do
-    e.yield '|'
-    e.yield '/'
-    e.yield '-'
-    e.yield '\\'
-  end
-end
 
 module HeimdallTools
+  DEFAULT_NIST_TAG = %w{SA-11 RA-5}.freeze
+
+  INSPEC_INPUTS_MAPPING = {
+    string: 'String',
+    numeric: 'Numeric',
+    regexp: 'Regexp',
+    array: 'Array',
+    hash: 'Hash',
+    boolean: 'Boolean',
+    any: 'Any'
+  }.freeze
+
+  # Loading spinner sign
+  $spinner = Enumerator.new do |e|
+    loop do
+      e.yield '|'
+      e.yield '/'
+      e.yield '-'
+      e.yield '\\'
+    end
+  end
+
   class ASFFMapper
-    # the optional arguments are derived from AWS cli commands (get-enabled-standards and describe-standards) and probably only work AWS ASFF files
-    def initialize(asff_json, enabled_standards_json = nil, standards_json_array = nil)
-      begin
-        @aws_config_mapping = parse_mapper
-      rescue StandardError => e
-        raise "Invalid AWS Config mapping file:\nException: #{e}"
-      end
+    IMPACT_MAPPING = {
+      CRITICAL: 0.9,
+      HIGH: 0.7,
+      MEDIUM: 0.5,
+      LOW: 0.3,
+      INFORMATIONAL: 0.0
+    }.freeze
+
+    PRODUCT_ARN_MAPPING = {
+      /arn:.+:securityhub:.+:.*:product\/aws\/firewall-manager/ => FirewallManager,
+      /arn:.+:securityhub:.+:.*:product\/aws\/securityhub/ => SecurityHub,
+      /arn:.+:securityhub:.+:.*:product\/prowler\/prowler/ => Prowler
+    }.freeze
+
+    def initialize(asff_json, securityhub_standards_json_array: nil, meta: nil)
+      @meta = meta
+
+      @supporting_docs = {}
+      @supporting_docs[SecurityHub] = SecurityHub.supporting_docs({standards: securityhub_standards_json_array})
 
       begin
         asff_required_keys = %w(AwsAccountId CreatedAt Description GeneratorId Id ProductArn Resources SchemaVersion Severity Title Types UpdatedAt)
@@ -58,175 +63,169 @@ module HeimdallTools
         else
           raise "Not a findings file nor an individual finding"
         end
-
-        enabled = JSON.parse(enabled_standards_json) unless enabled_standards_json.nil?
-        standards_array = standards_json_array.map { |j| JSON.parse(j) } unless standards_json_array.nil?
-        @standards = enabled['StandardsSubscriptions'].to_h { |s| [s['StandardsSubscriptionArn'], standards_array.find { |st| st['Controls'][0]['StandardsControlArn'].include?(s['StandardsSubscriptionArn'].gsub(':subscription', ':control')) }] }.compact unless enabled.nil?
-
       rescue StandardError => e
         raise "Invalid ASFF file provided:\nException: #{e}"
       end
+
+      @coder = HTMLEntities.new
     end
 
-    def parse_mapper
-      csv_data = CSV.read(AWS_CONFIG_MAPPING_FILE, { encoding: 'UTF-8', headers: true, header_converters: :symbol })
-      csv_data.map(&:to_hash)
+    def encode(string)
+      @coder.encode(string, :basic, :named, :decimal)
     end
 
-    def create_attribute(name, value, required = nil, sensitive = nil, type = nil)
-      { name: name, options: { value: value, required: required, sensitive: sensitive, type: type }.compact }
-    end
-
-    def extract_scaninfo
-      info = {}
-      begin
-        info['name'] = 'AWS Security Finding Format'
-        info['title'] = "ASFF findings"
-        info
-      rescue StandardError => e
-        raise "Error extracting report info from ASFF file:\nException: #{e}"
+    def external_product_handler(product, data, func, default)
+      if (product.is_a?(Regexp) || (arn = PRODUCT_ARN_MAPPING.keys.find { |a| product.match(a) })) && PRODUCT_ARN_MAPPING.key?(arn || product) && PRODUCT_ARN_MAPPING[arn || product].respond_to?(func)
+        keywords = { encode: method(:encode) }
+        keywords = keywords.merge(@supporting_docs[PRODUCT_ARN_MAPPING[arn || product]]) if @supporting_docs.member?(PRODUCT_ARN_MAPPING[arn || product])
+        PRODUCT_ARN_MAPPING[arn || product].send(func, data, **keywords)
+      else
+        if default.is_a? Proc
+          default.call
+        else
+          default
+        end
       end
     end
 
-    # default value unless it comes from aws and has a aws config rule
-    def nist_tag(detail)
-      entries = detail.member?('ProductFields') && detail['ProductFields'].member?('RelatedAWSResources:0/type') && detail['ProductFields']['RelatedAWSResources:0/type'] == 'AWS::Config::ConfigRule' && detail['ProductFields'].member?('RelatedAWSResources:0/name') ? @aws_config_mapping.select { |rule| detail['ProductFields']['RelatedAWSResources:0/name'].include? rule[:awsconfigrulename] } : {}
+    def nist_tag(finding)
+      entries = external_product_handler(finding['ProductArn'], finding, :finding_nist_tag, {})
       tags = entries.map { |rule| rule[:nistid].split('|') }
       tags.empty? ? DEFAULT_NIST_TAG : tags.flatten.uniq
     end
 
-    def impact(detail)
+    def impact(finding)
       # there can be findings listed that are intentionally ignored due to the underlying control being superceded by a control from a different standard
-      if detail.member?('Workflow') && detail['Workflow'].member?('Status') && detail['Workflow']['Status'] == 'SUPPRESSED'
-        IMPACT_MAPPING[:INFORMATIONAL]
-      elsif @standards.nil? || !detail.member?('ProductFields') || !(detail['ProductFields'].member?('StandardsSubscriptionArn') || detail['ProductFields'].member?('StandardsGuideSubscriptionArn'))
-        # severity is required, but can be either 'label' or 'normalized' internally with 'label' being preferred.  other values can be in here too such as the original severity rating.
-        if detail['Severity'].key?('Label')
-          severity = detail['Severity']['Label']
-          # asff file does not contain accurate severity information - when additional context, i.e. standards, is not provided, set informational to medium.
-          if severity == 'INFORMATIONAL'
-            IMPACT_MAPPING[:MEDIUM]
-          else
-            IMPACT_MAPPING[severity.to_sym]
-          end
-        else
-          detail['Severity']['Normalized']/100.0
-        end
+      if finding.member?('Workflow') && finding['Workflow'].member?('Status') && finding['Workflow']['Status'] == 'SUPPRESSED'
+        imp = :INFORMATIONAL
       else
-        IMPACT_MAPPING[@standards[detail['ProductFields'][detail['ProductFields'].member?('StandardsSubscriptionArn') ? 'StandardsSubscriptionArn' : 'StandardsGuideSubscriptionArn']]['Controls'].find { |c| c['StandardsControlArn'] == detail['ProductFields']['StandardsControlArn'] }['SeverityRating'].to_sym]
+        # severity is required, but can be either 'label' or 'normalized' internally with 'label' being preferred.  other values can be in here too such as the original severity rating.
+        default = Proc.new { finding['Severity'].key?('Label') ? finding['Severity']['Label'].to_sym : finding['Severity']['Normalized']/100.0 }
+        imp = external_product_handler(finding['ProductArn'], finding, :finding_impact, default)
       end
+      imp.is_a?(Symbol) ? IMPACT_MAPPING[imp] : imp
     end
 
     def desc_tags(data, label)
       { data: data || NA_STRING, label: label || NA_STRING }
     end
 
-    # requires compliance->status attribute to be there - spec says it's optional
-    def findings(detail)
-      finding = {}
-      if detail.key?('Compliance') && detail['Compliance'].key?('Status')
-        case detail['Compliance']['Status']
+    def subfindings(finding)
+      subfinding = {}
+
+      statusreason = finding['Compliance']['StatusReasons'].map { |reason| reason.flatten.map { |string| encode(string) } }.flatten.join("\n") if finding.key?('Compliance') && finding['Compliance'].key?('StatusReasons')
+      if finding.key?('Compliance') && finding['Compliance'].key?('Status')
+        case finding['Compliance']['Status']
         when 'PASSED'
-          finding['status'] = 'passed'
-          finding['message'] = detail['Compliance']['StatusReasons'].map { |reason| reason.flatten }.flatten.join("\n") unless !detail['Compliance'].key?('StatusReasons')
+          subfinding['status'] = 'passed'
+          subfinding['message'] = statusreason if statusreason
         when 'WARNING'
-          finding['status'] = 'skipped'
-          finding['skip_message'] = detail['Compliance']['StatusReasons'].map { |reason| reason.flatten }.flatten.join("\n") unless !detail['Compliance'].key?('StatusReasons')
+          subfinding['status'] = 'skipped'
+          subfinding['skip_message'] = statusreason if statusreason
         when 'FAILED'
-          finding['status'] = 'failed'
-          finding['message'] = detail['Compliance']['StatusReasons'].map { |reason| reason.flatten }.flatten.join("\n") unless !detail['Compliance'].key?('StatusReasons')
+          subfinding['status'] = 'failed'
+          subfinding['message'] = statusreason if statusreason
         when 'NOT_AVAILABLE'
-          finding['status'] = 'skipped' # primary meaning is that the check could not be performed due to a service outage or API error, but it's also overloaded to mean NOT_APPLICABLE so technically 'skipped' or 'error' could be applicable, but AWS seems to do the equivalent of skipped
-          finding['message'] = detail['Compliance']['StatusReasons'].map { |reason| reason.flatten }.flatten.join("\n") unless !detail['Compliance'].key?('StatusReasons')
+          # primary meaning is that the check could not be performed due to a service outage or API error, but it's also overloaded to mean NOT_APPLICABLE so technically 'skipped' or 'error' could be applicable, but AWS seems to do the equivalent of skipped
+          subfinding['status'] = 'skipped'
+          subfinding['message'] = statusreason if statusreason
         else
-          finding['status'] = 'no_status'
-          finding['message'] = detail['Compliance']['StatusReasons'].map { |reason| reason.flatten }.flatten.join("\n") unless !detail['Compliance'].key?('StatusReasons')
+          subfinding['status'] = 'no_status'
+          subfinding['message'] = statusreason if statusreason
         end
       else
-        finding['status'] = 'no_status'
-        finding['message'] = detail['Compliance']['StatusReasons'].map { |reason| reason.flatten }.flatten.join("\n") unless !detail['Compliance'].key?('StatusReasons')
+        subfinding['status'] = 'no_status'
+        subfinding['message'] = statusreason if statusreason
       end
-      finding['code_desc'] = "Resources: [#{detail['Resources'].map { |r| "Type: #{r['Type']}, Id: #{r['Id']}" }.join(', ') }]"
-      finding['start_time'] = detail.key?('LastObservedAt') ? detail['LastObservedAt'] : detail['UpdatedAt']
-      [finding]
+
+      subfinding['code_desc'] = external_product_handler(finding['ProductArn'], finding, :subfindings_code_desc, '')
+      subfinding['code_desc'] += '; ' unless subfinding['code_desc'].empty?
+      subfinding['code_desc'] += "Resources: [#{finding['Resources'].map { |r| "Type: #{encode(r['Type'])}, Id: #{encode(r['Id'])}#{', Partition: ' + encode(r['Partition']) if r.key?('Partition')}#{', Region: ' + encode(r['Region']) if r.key?('Region')}" }.join(', ') }]"
+
+      subfinding['start_time'] = finding.key?('LastObservedAt') ? finding['LastObservedAt'] : finding['UpdatedAt']
+
+      [subfinding]
     end
 
-    # todo: create aws submapper like prowler but this one gets the raw data from aws directly
-    # todo: verify if prowler still works and add the id thing to each finding which is to extract [textNUMBER] from the title text
-    # todo: finding id + resources->type and id as the subtest title thingy if they exists
     def to_hdf
-      id_groups = {}
-      @report['Findings'].each do |detail|
+      product_groups = {}
+      @report['Findings'].each do |finding|
         printf("\rProcessing: %s", $spinner.next)
 
+        external = method(:external_product_handler).curry(4)[finding['ProductArn']][finding]
+
+        # group subfindings by asff productarn and then hdf id
         item = {}
-        item['id'] = if detail.member?('ProductFields') && detail['ProductFields'].member?('ControlId')
-                       detail['ProductFields']['ControlId']
-                     elsif detail.member?('ProductFields') && detail['ProductFields'].member?('RuleId')
-                       detail['ProductFields']['RuleId']
-                     elsif detail.member?('ProductFields') && detail['ProductFields'].member?('MITRESAFHDFId') # for our custom mappers
-                       detail['ProductFields']['MITRESAFHDFId']
-                     else
-                       detail['Title'] # subfindings are grouped based on id so using the ideal case if it's there otherwise the guaranteed attribute
-                     end
-        item['title'] = detail['Title']
+        item['id'] = external[:finding_id][encode(finding['GeneratorId'])]
 
-        item['tags'] = { nist: nist_tag(detail) }
+        item['title'] = external[:finding_title][encode(finding['Title'])]
 
-        item['impact'] = impact(detail)
+        item['tags'] = { nist: nist_tag(finding) }
 
-        item['desc'] = detail['Description']
+        item['impact'] = impact(finding)
+
+        item['desc'] = encode(finding['Description'])
 
         item['descriptions'] = []
-        item['descriptions'] << desc_tags(detail['Remediation']['Recommendation'].map { |k,v| v }.join("\n"), 'fix') unless detail['Remediation'].nil? || detail['Remediation']['Recommendation'].nil?
+        item['descriptions'] << desc_tags(finding['Remediation']['Recommendation'].map { |k,v| encode(v) }.join("\n"), 'fix') if finding.key?('Remediation') && finding['Remediation'].key?('Recommendation')
 
         item['refs'] = []
-        item['refs'] << { url: detail['SourceUrl'] } unless detail['SourceUrl'].nil?
+        item['refs'] << { url: finding['SourceUrl'] } if finding.key?('SourceUrl')
 
         item['source_location'] = NA_HASH
-        item['code'] = JSON.pretty_generate(detail)
 
-        item['results'] = findings(detail)
+        item['results'] = subfindings(finding)
 
-        id_groups[item['id']] = [] if id_groups[item['id']].nil?
-        id_groups[item['id']] << item
+        arn = PRODUCT_ARN_MAPPING.keys.find { |a| finding['ProductArn'].match(a) }
+        if arn.nil?
+          product_info = finding['ProductArn'].split(':')[-1]
+          arn = Regexp.new "arn:.+:securityhub:.+:.*:product/#{product_info.split('/')[1]}/#{product_info.split('/')[2]}"
+        end
+        product_groups[arn] = {} if product_groups[arn].nil?
+        product_groups[arn][item['id']] = [] if product_groups[arn][item['id']].nil?
+        product_groups[arn][item['id']] << [item, finding]
       end
 
       controls = []
-      id_groups.each do |id, details|
-        printf("\rProcessing: %s", $spinner.next)
+      product_groups.each do |product, id_groups|
+        id_groups.each do |id, data|
+          printf("\rProcessing: %s", $spinner.next)
 
-        if details.one?
-          controls << details[0] # not sure what to do to get the titles working properly cause there's no title attribute for a subfinding so these ones get the finding/resource thing and no actual title whereas the ones with multiple subfindings get a title but no finding/resources
-        else
+          external = method(:external_product_handler).curry(4)[product]
+
+          group = data.map { |d| d[0] }
+          findings = data.map { |d| d[1] }
+
+          product_info = findings[0]['ProductArn'].split(':')[-1].split('/')
+          product_name = external[findings][:product_name][encode("#{product_info[1]}/#{product_info[2]}")]
+
           item = {}
-          item['id'] = id
-          # require 'pry' # todo: remove
-          # binding.pry
-          item['title'] = details.map { |d| d['title'] }.uniq.join("\n")
+          # add product name to id if any ids are the same across products
+          item['id'] = product_groups.filter { |pg| pg != product }.values.any? { |ig| ig.keys.include?(id) } ? "[#{product_name}] #{id}" : id
 
-          item['tags'] = { nist: details.map { |d| d['tags'][:nist] }.flatten.uniq }
+          item['title'] = "#{product_name}: #{group.map { |d| d['title'] }.uniq.join(";")}"
 
-          item['impact'] = details.map { |d| d['impact'] }.max
+          item['tags'] = { nist: group.map { |d| d['tags'][:nist] }.flatten.uniq }
 
-          item['desc'] = details.map { |d| d['desc'] }.uniq.join("\n")
+          item['impact'] = group.map { |d| d['impact'] }.max
 
-          item['descriptions'] = details.map { |d| d['descriptions'] }.flatten.compact.reject(&:empty?).uniq
+          item['desc'] = external[group][:desc][group.map { |d| d['desc'] }.uniq.join("\n")]
 
-          item['refs'] = details.map { |d| d['refs'] }.flatten.compact.reject(&:empty?).uniq
+          item['descriptions'] = group.map { |d| d['descriptions'] }.flatten.compact.reject(&:empty?).uniq
+
+          item['refs'] = group.map { |d| d['refs'] }.flatten.compact.reject(&:empty?).uniq
 
           item['source_location'] = NA_HASH
-          item['code'] = "{ \"Findings\": [\n#{details.map { |d| d['code'] }.uniq.join(",\n")}\n]\n}" # todo: fix up the formatting some more - ex. findings key should be on new line
+          item['code'] = JSON.pretty_generate({ "Findings": findings })
 
-          item['results'] = details.map { |d| d['results'] }.flatten.uniq
+          item['results'] = group.map { |d| d['results'] }.flatten.uniq
 
           controls << item
         end
       end
 
-      scaninfo = extract_scaninfo
-      results = HeimdallDataFormat.new(profile_name: scaninfo['name'],
-                                       title: scaninfo['title'],
+      results = HeimdallDataFormat.new(profile_name: @meta && @meta.key?('name') ? @meta['name'] : 'AWS Security Finding Format',
+                                       title: @meta && @meta.key?('title') ? @meta['title'] : "ASFF findings",
                                        controls: controls)
       results.to_hdf
     end

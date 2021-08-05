@@ -3,3 +3,4 @@
 Examples:
 
   heimdall_tools asff_mapper -i <asff-finding-json> -o <hdf-scan-results-json>
+  heimdall_tools asff_mapper -i <asff-finding-json> --sh <standard-1-json> ... <standard-n-json> -o <hdf-scan-results-json>

@@ -15,9 +15,9 @@ Gem::Specification.new do |spec|
   rescue StandardError
     '0.0.0.1.ENOGVB'
   end
-  spec.authors       = ['Robert Thew', 'Rony Xavier', 'Aaron Lippold']
+  spec.authors       = ['Robert Thew', 'Rony Xavier', 'Amndeep Singh Mann', 'Aaron Lippold']
   spec.email         = ['rxavier@mitre.org']
-  spec.summary       = 'Convert Forify, Openzap and Sonarqube results to HDF'
+  spec.summary       = 'Convert a variety of security product results to HDF'
   spec.description   = 'Converter utils that can be included as a gem or used from the command line'
   spec.homepage      = 'https://github.com/mitre/heimdall_tools'
   spec.license       = 'Apache-2.0'
@@ -28,9 +28,11 @@ Gem::Specification.new do |spec|
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths = ['lib']
 
+  spec.add_runtime_dependency 'aws-sdk-securityhub', '~> 1'
   spec.add_runtime_dependency 'aws-sdk-configservice', '~> 1'
   spec.add_runtime_dependency 'csv', '~> 3.1'
   spec.add_runtime_dependency 'git-lite-version-bump', '>= 0.17.2'
+  spec.add_runtime_dependency 'htmlentities', '~> 4.3.4'
   spec.add_runtime_dependency 'httparty', '~> 0.18.0'
   spec.add_runtime_dependency 'json', '~> 2.3'
   spec.add_runtime_dependency 'nokogiri', '~> 1.11'
