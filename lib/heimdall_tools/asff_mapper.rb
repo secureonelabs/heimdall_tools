@@ -31,7 +31,7 @@ module HeimdallTools
     end
   end
 
-  # todo: use hash.dig and safe navigation operator throughout
+  # TODO: use hash.dig and safe navigation operator throughout
   class ASFFMapper
     IMPACT_MAPPING = {
       CRITICAL: 0.9,
@@ -201,7 +201,7 @@ module HeimdallTools
 
           item = {}
           # add product name to id if any ids are the same across products
-          item['id'] = product_groups.select { |pg| pg != product }.values.any? { |ig| ig.keys.include?(id) } ? "[#{product_name}] #{id}" : id
+          item['id'] = product_groups.reject { |pg| pg == product }.values.any? { |ig| ig.keys.include?(id) } ? "[#{product_name}] #{id}" : id
 
           item['title'] = "#{product_name}: #{group.map { |d| d['title'] }.uniq.join(';')}"
 
