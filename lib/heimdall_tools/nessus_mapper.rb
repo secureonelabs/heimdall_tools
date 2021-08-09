@@ -94,11 +94,11 @@ module HeimdallTools
       finding = {}
       if issue['compliance-result']
         case issue['compliance-result']
-        when "PASSED"
+        when 'PASSED'
           finding['status'] = 'passed'
-        when "FAILED"
-          finding['status'] = 'failed'
-        when "WARNING"
+        when 'ERROR'
+          finding['status'] = 'error'
+        when 'WARNING'
           finding['status'] = 'skipped'
         else
           finding['status'] = 'failed'

@@ -27,6 +27,8 @@ Style/NumericLiterals:
   MinDigits: 10
 Metrics/ModuleLength:
   Enabled: false
+Metrics/ClassLength:
+  Enabled: false
 Style/PercentLiteralDelimiters:
   PreferredDelimiters:
     '%':  '{}'
