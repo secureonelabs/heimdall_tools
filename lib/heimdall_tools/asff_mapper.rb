@@ -1,4 +1,6 @@
 require 'json'
+require 'set'
+
 require 'htmlentities'
 
 require 'heimdall_tools/hdf'
@@ -29,6 +31,7 @@ module HeimdallTools
     end
   end
 
+  # todo: use hash.dig and safe navigation operator throughout
   class ASFFMapper
     IMPACT_MAPPING = {
       CRITICAL: 0.9,
@@ -53,10 +56,10 @@ module HeimdallTools
       begin
         asff_required_keys = %w{AwsAccountId CreatedAt Description GeneratorId Id ProductArn Resources SchemaVersion Severity Title Types UpdatedAt}
         @report = JSON.parse(asff_json)
-        if @report.length == 1 && @report.member?('Findings') && @report['Findings'].each { |finding| asff_required_keys.difference(finding.keys).none? }.all?
+        if @report.length == 1 && @report.member?('Findings') && @report['Findings'].each { |finding| asff_required_keys.to_set.difference(finding.keys.to_set).none? }.all?
           # ideal case that is spec compliant
           # might need to ensure that the file is utf-8 encoded and remove a BOM if one exists
-        elsif asff_required_keys.difference(@report.keys).none?
+        elsif asff_required_keys.to_set.difference(@report.keys.to_set).none?
           # individual finding so have to add wrapping array
           @report = { 'Findings' => [@report] }
         else
@@ -127,11 +130,11 @@ module HeimdallTools
           subfinding['status'] = 'skipped'
           subfinding['message'] = statusreason if statusreason
         else
-          subfinding['status'] = 'no_status'
+          subfinding['status'] = 'error' # not a valid value for the status enum
           subfinding['message'] = statusreason if statusreason
         end
       else
-        subfinding['status'] = 'no_status'
+        subfinding['status'] = 'skipped' # if no compliance status is provided which is a weird but possible case, then skip
         subfinding['message'] = statusreason if statusreason
       end
 
