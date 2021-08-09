@@ -201,7 +201,7 @@ module HeimdallTools
 
           item = {}
           # add product name to id if any ids are the same across products
-          item['id'] = product_groups.filter { |pg| pg != product }.values.any? { |ig| ig.keys.include?(id) } ? "[#{product_name}] #{id}" : id
+          item['id'] = product_groups.select { |pg| pg != product }.values.any? { |ig| ig.keys.include?(id) } ? "[#{product_name}] #{id}" : id
 
           item['title'] = "#{product_name}: #{group.map { |d| d['title'] }.uniq.join(';')}"
 
