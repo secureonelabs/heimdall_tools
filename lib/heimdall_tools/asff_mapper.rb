@@ -127,14 +127,14 @@ module HeimdallTools
         when 'NOT_AVAILABLE'
           # primary meaning is that the check could not be performed due to a service outage or API error, but it's also overloaded to mean NOT_APPLICABLE so technically 'skipped' or 'error' could be applicable, but AWS seems to do the equivalent of skipped
           subfinding['status'] = 'skipped'
-          subfinding['message'] = statusreason if statusreason
+          subfinding['skip_message'] = statusreason if statusreason
         else
           subfinding['status'] = 'error' # not a valid value for the status enum
           subfinding['message'] = statusreason if statusreason
         end
       else
         subfinding['status'] = 'skipped' # if no compliance status is provided which is a weird but possible case, then skip
-        subfinding['message'] = statusreason if statusreason
+        subfinding['skip_message'] = statusreason if statusreason
       end
 
       subfinding['code_desc'] = external_product_handler(finding['ProductArn'], finding, :subfindings_code_desc, '')
