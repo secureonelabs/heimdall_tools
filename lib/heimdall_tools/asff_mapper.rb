@@ -89,9 +89,8 @@ module HeimdallTools
     end
 
     def nist_tag(finding)
-      entries = external_product_handler(finding['ProductArn'], finding, :finding_nist_tag, {})
-      tags = entries.map { |rule| rule[:nistid].split('|') }
-      tags.empty? ? DEFAULT_NIST_TAG : tags.flatten.uniq
+      tags = external_product_handler(finding['ProductArn'], finding, :finding_nist_tag, {})
+      tags.empty? ? DEFAULT_NIST_TAG : tags
     end
 
     def impact(finding)

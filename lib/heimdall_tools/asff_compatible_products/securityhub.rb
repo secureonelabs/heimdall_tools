@@ -53,7 +53,17 @@ module HeimdallTools
     def self.finding_nist_tag(finding, *, aws_config_mapping:, **)
       return {} unless finding['ProductFields']['RelatedAWSResources:0/type'] == 'AWS::Config::ConfigRule'
 
-      aws_config_mapping.select { |rule| finding['ProductFields']['RelatedAWSResources:0/name'].include? rule[:awsconfigrulename] }
+      entries = aws_config_mapping.select { |rule| finding['ProductFields']['RelatedAWSResources:0/name'].include? rule[:awsconfigrulename] }
+      entries.map do |rule|
+        tags_joined = rule[:nistid].split('|') # subheadings are joined together in the csv file
+        tags_joined.map do |tag|
+          if (i = tag.index('(')).nil?
+            tag
+          else
+            tag[i..].scan(/\(.+?\)/).map { |subheading| "#{tag[0..i-1]}#{subheading}" }
+          end
+        end
+      end.flatten.uniq
     end
 
     def self.finding_title(finding, *, encode:, controls: nil, **)
