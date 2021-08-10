@@ -60,7 +60,7 @@ module HeimdallTools
           if (i = tag.index('(')).nil?
             tag
           else
-            tag[i..].scan(/\(.+?\)/).map { |subheading| "#{tag[0..i-1]}#{subheading}" }
+            tag[i..-1].scan(/\(.+?\)/).map { |subheading| "#{tag[0..i-1]}#{subheading}" }
           end
         end
       end.flatten.uniq
