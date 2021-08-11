@@ -10,6 +10,7 @@ AllCops:
   - 'test/**/*'
   - 'examples/plugins/train-*/test/**/*'
   - 'vendor/**/*'
+  - 'sample_jsons/**/*'
 Style/Documentation:
   Enabled: false
 Layout/ParameterAlignment:
@@ -25,6 +26,8 @@ Layout/EmptyLinesAroundBlockBody:
 Style/NumericLiterals:
   MinDigits: 10
 Metrics/ModuleLength:
+  Enabled: false
+Metrics/ClassLength:
   Enabled: false
 Style/PercentLiteralDelimiters:
   PreferredDelimiters:
