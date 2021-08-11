@@ -55,15 +55,13 @@ module HeimdallTools
       findings.uniq
     end
 
-    # rubocop:disable Layout/LineEndStringConcatenationIndentation
     def snippet(snippetid)
       snippet = @snippets.select { |x| x['id'].eql?(snippetid) }.first
       "\nPath: #{snippet['File']}\n" \
-      "StartLine: #{snippet['StartLine']}, " \
-      "EndLine: #{snippet['EndLine']}\n" \
-      "Code:\n#{snippet['Text']['#cdata-section'].strip}" \
+        "StartLine: #{snippet['StartLine']}, " \
+        "EndLine: #{snippet['EndLine']}\n" \
+        "Code:\n#{snippet['Text']['#cdata-section'].strip}" \
     end
-    # rubocop:enable Layout/LineEndStringConcatenationIndentation
 
     def nist_tag(rule)
       references = rule['References']['Reference']

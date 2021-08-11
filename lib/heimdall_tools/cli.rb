@@ -70,7 +70,7 @@ module HeimdallTools
     option :output_prefix, required: true, aliases: '-o'
     def snyk_mapper
       hdfs = HeimdallTools::SnykMapper.new(File.read(options[:json]), options[:name]).to_hdf
-      puts "\r\HDF Generated:\n"
+      puts "\rHDF Generated:\n"
       hdfs.each_key do |host|
         File.write("#{options[:output_prefix]}-#{host}.json", hdfs[host])
         puts "#{options[:output_prefix]}-#{host}.json"
@@ -84,7 +84,7 @@ module HeimdallTools
     def nikto_mapper
       hdf = HeimdallTools::NiktoMapper.new(File.read(options[:json])).to_hdf
       File.write(options[:output], hdf)
-      puts "\r\HDF Generated:\n"
+      puts "\rHDF Generated:\n"
       puts options[:output].to_s
     end
 
@@ -95,7 +95,7 @@ module HeimdallTools
     def jfrog_xray_mapper
       hdf = HeimdallTools::JfrogXrayMapper.new(File.read(options[:json])).to_hdf
       File.write(options[:output], hdf)
-      puts "\r\HDF Generated:\n"
+      puts "\rHDF Generated:\n"
       puts options[:output].to_s
     end
 
@@ -106,7 +106,7 @@ module HeimdallTools
     def dbprotect_mapper
       hdf = HeimdallTools::DBProtectMapper.new(File.read(options[:xml])).to_hdf
       File.write(options[:output], hdf)
-      puts "\r\HDF Generated:\n"
+      puts "\rHDF Generated:\n"
       puts options[:output].to_s
     end
 
@@ -117,7 +117,7 @@ module HeimdallTools
     def aws_config_mapper
       hdf = HeimdallTools::AwsConfigMapper.new(options[:custom_mapping]).to_hdf
       File.write(options[:output], hdf)
-      puts "\r\HDF Generated:\n"
+      puts "\rHDF Generated:\n"
       puts options[:output].to_s
     end
 
@@ -128,7 +128,7 @@ module HeimdallTools
     def netsparker_mapper
       hdf = HeimdallTools::NetsparkerMapper.new(File.read(options[:xml])).to_hdf
       File.write(options[:output], hdf)
-      puts "\r\HDF Generated:\n"
+      puts "\rHDF Generated:\n"
       puts options[:output].to_s
     end
 
@@ -140,7 +140,7 @@ module HeimdallTools
     def sarif_mapper
       hdf = HeimdallTools::SarifMapper.new(File.read(options[:json])).to_hdf
       File.write(options[:output], hdf)
-      puts "\r\HDF Generated:\n"
+      puts "\rHDF Generated:\n"
       puts options[:output].to_s
     end
 
@@ -150,6 +150,29 @@ module HeimdallTools
     option :output, required: true, banner: 'HDF-SCAN-RESULTS-JSON', aliases: '-o'
     def scoutsuite_mapper
       hdf = HeimdallTools::ScoutSuiteMapper.new(File.read(options[:javascript])).to_hdf
+      File.write(options[:output], hdf)
+      puts "\rHDF Generated:\n"
+      puts options[:output].to_s
+    end
+
+    desc 'asff_mapper', 'asff_mapper translates AWS Security Finding Format results from JSON to HDF-formatted JSON so as to be viewable on Heimdall'
+    long_desc Help.text(:asff_mapper)
+    option :json, required: true, banner: 'ASFF-FINDING-JSON', aliases: ['-i', '--input', '-j']
+    option :securityhub_standards, required: false, type: :array, banner: 'ASFF-SECURITYHUB-STANDARDS-JSON', aliases: ['--sh', '--input-securityhub-standards']
+    option :output, required: true, banner: 'HDF-SCAN-RESULTS-JSON', aliases: '-o'
+    def asff_mapper
+      hdf = HeimdallTools::ASFFMapper.new(File.read(options[:json]), securityhub_standards_json_array: options[:securityhub_standards].nil? ? nil : options[:securityhub_standards].map { |filename| File.read(filename) }).to_hdf
+      File.write(options[:output], hdf)
+      puts "\rHDF Generated:\n"
+      puts options[:output].to_s
+    end
+
+    desc 'prowler_mapper', 'prowler_mapper translates Prowler-derived AWS Security Finding Format results from concatenated JSON blobs to HDF-formatted JSON so as to be viewable on Heimdall'
+    long_desc Help.text(:prowler_mapper)
+    option :json, required: true, banner: 'PROWLER-ASFF-JSON', aliases: ['-i', '--input', '-j']
+    option :output, required: true, banner: 'HDF-SCAN-RESULTS-JSON', aliases: '-o'
+    def prowler_mapper
+      hdf = HeimdallTools::ProwlerMapper.new(File.read(options[:json])).to_hdf
       File.write(options[:output], hdf)
       puts "\rHDF Generated:\n"
       puts options[:output].to_s
