@@ -1,6 +1,6 @@
 $LOAD_PATH.unshift(File.expand_path(__dir__))
 require 'heimdall_tools/version'
-warn 'heimdall_tools Ruby gem is deprecated. Please see instructions on how to convert to the new package. {ADD LINK HERE}'
+puts "NOTICE: heimdall_tools Ruby gem is deprecated. Please see instructions on how to convert to the new typescript version. https://github.com/mitre/heimdall_tools\n\n"
 
 module HeimdallTools
   autoload :Help, 'heimdall_tools/help'
