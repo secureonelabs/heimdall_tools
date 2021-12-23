@@ -22,7 +22,7 @@ HeimdallTools supplies several methods to convert output from various tools to "
 1. [**snyk_mapper**](#snyk_mapper) - commercial package vulnerability scanner
 1. [**sonarqube_mapper**](#sonarqube_mapper) - open-source static code analysis tool
 1. [**xccdf_results_mapper**](#xccdf_results_mapper) - extensible configuration checklist description results format
-1. [*scc_mapper](#xccdf_results_mapper) - scap compliance checker format
+1. [**scc_mapper**](#xccdf_results_mapper) - scap compliance checker format
 1. [**zap_mapper**](#zap_mapper) - OWASP ZAP - open-source dynamic code analysis tool
 
 ## Want to recommend a mapper for another tool? Please use these steps:
