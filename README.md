@@ -1,4 +1,4 @@
-# Heimdall Tools has been depreciated. See the new [SAF CLI](https://github.com/mitre/saf)
+# Heimdall Tools has been deprecated. See the new [SAF CLI](https://github.com/mitre/saf)
 
 
 
